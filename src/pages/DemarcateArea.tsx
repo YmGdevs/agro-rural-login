@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { MapPin, RotateCcw, Save, Loader2, ArrowLeft, Download, Clock, Target } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,7 +28,7 @@ const DemarcateArea: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [points, setPoints] = useState<GpsPoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [producers, setProducers] = useState<Producer[]>([]);
+  const [producerName, setProducerName] = useState<string>("");
   const [selectedProducer, setSelectedProducer] = useState<string>("");
   const [parcelaName, setParcelaName] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
@@ -40,7 +40,7 @@ const DemarcateArea: React.FC = () => {
     
     const initialize = async () => {
       try {
-        await loadProducers();
+        await loadProducer();
         
         // Auto-select producer if passed in URL
         const producerIdFromUrl = searchParams.get('producerId');
@@ -80,20 +80,29 @@ const DemarcateArea: React.FC = () => {
     }
   };
 
-  const loadProducers = async (): Promise<void> => {
-    console.log("DemarcateArea: Loading producers");
+  const loadProducer = async (): Promise<void> => {
+    console.log("DemarcateArea: Loading producer");
+    const producerIdFromUrl = searchParams.get('producerId');
+    if (!producerIdFromUrl) {
+      throw new Error("Producer ID not found in URL");
+    }
+
     try {
       const { data, error } = await supabase
         .from('producers')
         .select('id, nome_completo')
-        .order('nome_completo');
+        .eq('id', producerIdFromUrl)
+        .single();
       
       if (error) throw error;
-      setProducers(data || []);
-      console.log("DemarcateArea: Producers loaded successfully", data?.length);
+      if (data) {
+        setProducerName(data.nome_completo);
+        setSelectedProducer(data.id);
+      }
+      console.log("DemarcateArea: Producer loaded successfully", data?.nome_completo);
     } catch (error) {
-      console.error('Erro ao carregar produtores:', error);
-      toast.error('Erro ao carregar lista de produtores');
+      console.error('Erro ao carregar produtor:', error);
+      toast.error('Erro ao carregar dados do produtor');
       throw error;
     }
   };
@@ -355,26 +364,12 @@ const DemarcateArea: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-6">
 
-              {/* Producer Selection */}
+              {/* Producer Label */}
               <div className="space-y-2">
-                <Label htmlFor="producer">Selecionar Produtor</Label>
-                <Select value={selectedProducer} onValueChange={setSelectedProducer}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Escolha um produtor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {producers.map((producer) => (
-                      <SelectItem key={producer.id} value={producer.id}>
-                        {producer.nome_completo}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {searchParams.get('producerId') && (
-                  <p className="text-sm text-muted-foreground">
-                    Produtor pré-selecionado do perfil
-                  </p>
-                )}
+                <Label>Produtor</Label>
+                <div className="p-3 bg-muted rounded-lg">
+                  <span className="font-medium">{producerName || "Carregando..."}</span>
+                </div>
               </div>
 
               {/* Plot Name */}
