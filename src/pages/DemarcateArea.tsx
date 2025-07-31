@@ -377,22 +377,18 @@ const DemarcateArea: React.FC = () => {
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-6xl mx-auto">
-        <div className="flex items-center mb-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/dashboard")}
-            className="mr-3"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-2xl font-bold">Demarcar Parcela - Sistema de Coordenadas</h1>
-        </div>
-
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Configuration Panel */}
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center space-y-0 pb-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/dashboard")}
+                className="mr-3"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
               <CardTitle>Configuração da Parcela</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
