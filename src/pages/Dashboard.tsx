@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import { 
   Users, 
   MapPin, 
@@ -19,6 +20,7 @@ import {
 
 const Dashboard = () => {
   const userName = "João Silva"; // Mock user name
+  const navigate = useNavigate();
 
 
   const actionButtons = [
@@ -64,7 +66,15 @@ const Dashboard = () => {
         {/* Action Buttons Grid */}
         <div className="grid grid-cols-2 gap-4 mt-6">
           {actionButtons.map((button, index) => (
-            <Card key={index} className="bg-white rounded-2xl shadow-sm border-0 overflow-hidden">
+            <Card 
+              key={index} 
+              className="bg-white rounded-2xl shadow-sm border-0 overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => {
+                if (button.title === "Registar Produtor") {
+                  navigate("/register-producer");
+                }
+              }}
+            >
               <CardContent className="p-6">
                 <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mb-4">
                   <button.icon className="h-8 w-8 text-green-600" />
