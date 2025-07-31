@@ -25,9 +25,9 @@ const Index = () => {
       description: "Bem-vindo ao sistema de extensionistas agrícolas",
     });
 
-    // Navigate to register producer page
+    // Navigate to dashboard after successful login
     setTimeout(() => {
-      navigate("/register-producer");
+      navigate("/dashboard");
     }, 1000);
   };
 
