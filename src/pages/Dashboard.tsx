@@ -26,6 +26,8 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  console.log("Dashboard component rendering, user:", user);
+
   const handleSignOut = async () => {
     try {
       await signOut();
