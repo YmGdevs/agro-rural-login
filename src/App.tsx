@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import DemarcateArea from "./pages/DemarcateArea";
 import ProducersList from "./pages/ProducersList";
 import ProducerParcelas from "./pages/ProducerParcelas";
+import LoanRequest from "./pages/LoanRequest";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,11 @@ const App = () => (
             <Route path="/producer/:producerId/parcelas" element={
               <ProtectedRoute>
                 <ProducerParcelas />
+              </ProtectedRoute>
+            } />
+            <Route path="/loan-request" element={
+              <ProtectedRoute>
+                <LoanRequest />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

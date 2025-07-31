@@ -107,6 +107,8 @@ const Dashboard = () => {
                   navigate("/producers");
                 } else if (button.title === "Mapear Parcela") {
                   navigate("/demarcate-area");
+                } else if (button.title === "Pedir Empréstimo") {
+                  navigate("/loan-request");
                 }
               }}
             >
