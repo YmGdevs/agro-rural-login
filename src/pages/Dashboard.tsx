@@ -25,11 +25,11 @@ const Dashboard = () => {
 
   const actionButtons = [
     { title: "Registar Produtor", icon: UserPlus, description: "Novo cadastro" },
+    { title: "Ver Produtores", icon: Users, description: "Lista completa" },
     { title: "Mapear Parcela", icon: Map, description: "Localização GPS" },
     { title: "Iniciar Visita", icon: PlayCircle, description: "Acompanhamento" },
     { title: "Ver Recursos", icon: BookOpen, description: "Materiais" },
     { title: "Relatórios", icon: BarChart3, description: "Estatísticas" },
-    { title: "Sincronizar", icon: RefreshCw, description: "Dados offline" },
   ];
 
   const navigationItems = [
@@ -72,6 +72,8 @@ const Dashboard = () => {
               onClick={() => {
                 if (button.title === "Registar Produtor") {
                   navigate("/register-producer");
+                } else if (button.title === "Ver Produtores") {
+                  navigate("/producers");
                 } else if (button.title === "Mapear Parcela") {
                   navigate("/demarcate-area");
                 }

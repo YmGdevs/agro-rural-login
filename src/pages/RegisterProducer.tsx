@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Camera, User, FileText, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const RegisterProducer = () => {
   const [formData, setFormData] = useState({
@@ -36,7 +37,7 @@ const RegisterProducer = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.nomeCompleto || !formData.genero || !formData.idade || !formData.nuit) {
@@ -49,18 +50,42 @@ const RegisterProducer = () => {
       return;
     }
 
-    toast.success("Produtor rural registado com sucesso!", {
-      description: `${formData.nomeCompleto} foi adicionado ao sistema`,
-    });
+    try {
+      // Insert producer data into database
+      const { error } = await supabase
+        .from('producers')
+        .insert({
+          nome_completo: formData.nomeCompleto,
+          genero: formData.genero,
+          idade: parseInt(formData.idade),
+          nuit: formData.nuit,
+          documento_url: formData.documento.name // For now, just store filename
+        });
 
-    // Reset form
-    setFormData({
-      nomeCompleto: "",
-      genero: "",
-      idade: "",
-      nuit: "",
-      documento: null
-    });
+      if (error) {
+        if (error.code === '23505') { // Unique constraint violation
+          toast.error("Este NUIT já está registado no sistema");
+        } else {
+          toast.error("Erro ao registar o produtor. Tente novamente.");
+        }
+        return;
+      }
+
+      toast.success("Produtor rural registado com sucesso!", {
+        description: `${formData.nomeCompleto} foi adicionado ao sistema`,
+      });
+
+      // Reset form
+      setFormData({
+        nomeCompleto: "",
+        genero: "",
+        idade: "",
+        nuit: "",
+        documento: null
+      });
+    } catch (error) {
+      toast.error("Erro ao registar o produtor. Tente novamente.");
+    }
   };
 
   return (

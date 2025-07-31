@@ -6,6 +6,7 @@ import Index from "./pages/Index";
 import RegisterProducer from "./pages/RegisterProducer";
 import Dashboard from "./pages/Dashboard";
 import DemarcateArea from "./pages/DemarcateArea";
+import ProducersList from "./pages/ProducersList";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/register-producer" element={<RegisterProducer />} />
           <Route path="/demarcate-area" element={<DemarcateArea />} />
+          <Route path="/producers" element={<ProducersList />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
