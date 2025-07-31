@@ -5,10 +5,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Sprout, User, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,6 +24,11 @@ const Index = () => {
     toast.success("Login realizado com sucesso!", {
       description: "Bem-vindo ao sistema de extensionistas agrícolas",
     });
+
+    // Navigate to register producer page
+    setTimeout(() => {
+      navigate("/register-producer");
+    }, 1000);
   };
 
   return (
