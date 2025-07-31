@@ -541,17 +541,6 @@ const DemarcateArea: React.FC = () => {
                 </div>
               )}
 
-              {/* Instructions */}
-              <div className="bg-muted p-4 rounded-lg">
-                <h4 className="font-medium mb-2">Instruções:</h4>
-                <ul className="text-sm space-y-1 text-muted-foreground">
-                  <li>• Selecione primeiro um produtor e dê um nome à parcela</li>
-                  <li>• Use modo Manual para capturar pontos individualmente</li>
-                  <li>• Use modo Caminhada para capturar pontos automaticamente</li>
-                  <li>• São necessários pelo menos 3 pontos para formar uma área</li>
-                  <li>• Funciona completamente offline, usando apenas GPS</li>
-                </ul>
-              </div>
             </CardContent>
           </Card>
 
