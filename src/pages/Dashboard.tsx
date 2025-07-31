@@ -9,7 +9,7 @@ import {
   CheckCircle, 
   UserPlus, 
   Map, 
-  PlayCircle, 
+  CreditCard, 
   BookOpen, 
   BarChart3, 
   RefreshCw,
@@ -50,7 +50,7 @@ const Dashboard = () => {
     { title: "Registar Produtor", icon: UserPlus, description: "Novo cadastro" },
     { title: "Ver Produtores", icon: Users, description: "Lista completa" },
     { title: "Mapear Parcela", icon: Map, description: "Localização GPS" },
-    { title: "Iniciar Visita", icon: PlayCircle, description: "Acompanhamento" },
+    { title: "Pedir Empréstimo", icon: CreditCard, description: "Solicitar crédito" },
     { title: "Ver Recursos", icon: BookOpen, description: "Materiais" },
     { title: "Relatórios", icon: BarChart3, description: "Estatísticas" },
   ];
