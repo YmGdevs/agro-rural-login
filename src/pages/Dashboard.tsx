@@ -72,6 +72,8 @@ const Dashboard = () => {
               onClick={() => {
                 if (button.title === "Registar Produtor") {
                   navigate("/register-producer");
+                } else if (button.title === "Mapear Parcela") {
+                  navigate("/demarcate-area");
                 }
               }}
             >
