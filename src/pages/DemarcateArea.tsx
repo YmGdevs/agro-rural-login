@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MapPin, Play, Square, RotateCcw, Save, Loader2, ArrowLeft, Download, Satellite, Clock, Target } from "lucide-react";
+import { MapPin, RotateCcw, Save, Loader2, ArrowLeft, Download, Clock, Target } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -23,15 +23,10 @@ interface Producer {
   nome_completo: string;
 }
 
-type DemarcationMode = "manual" | "walking";
-
 const DemarcateArea: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [mode, setMode] = useState<DemarcationMode>("manual");
   const [points, setPoints] = useState<GpsPoint[]>([]);
-  const [isWalking, setIsWalking] = useState(false);
-  const [watchId, setWatchId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [producers, setProducers] = useState<Producer[]>([]);
   const [selectedProducer, setSelectedProducer] = useState<string>("");
@@ -173,39 +168,6 @@ const DemarcateArea: React.FC = () => {
     }
   };
 
-  const toggleWalkingMode = (): void => {
-    if (isWalking) {
-      if (watchId) {
-        navigator.geolocation.clearWatch(watchId);
-        setWatchId(null);
-      }
-      setIsWalking(false);
-      toast.info("Modo caminhada parado");
-    } else {
-      const id = navigator.geolocation.watchPosition(
-        (position) => {
-          const newPoint: GpsPoint = {
-            id: Date.now().toString(),
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-            accuracy: position.coords.accuracy || 0,
-            timestamp: new Date()
-          };
-          setPoints(prev => [...prev, newPoint]);
-          setCurrentGpsAccuracy(position.coords.accuracy);
-          toast.success(`Ponto ${points.length + 1} capturado automaticamente`);
-        },
-        (error) => {
-          console.error(error);
-          toast.error("Erro na captura automática");
-        },
-        { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
-      );
-      setWatchId(id);
-      setIsWalking(true);
-      toast.success("Modo caminhada iniciado");
-    }
-  };
 
   const removeLastPoint = (): void => {
     if (points.length > 0) {
@@ -426,27 +388,6 @@ const DemarcateArea: React.FC = () => {
                 />
               </div>
 
-              {/* Mode Selection */}
-              <div className="flex gap-2">
-                <Button
-                  variant={mode === "manual" ? "default" : "outline"}
-                  onClick={() => setMode("manual")}
-                  className="flex-1"
-                  disabled={!selectedProducer || gpsStatus !== "available"}
-                >
-                  <MapPin className="mr-2 h-4 w-4" />
-                  Manual
-                </Button>
-                <Button
-                  variant={mode === "walking" ? "default" : "outline"}
-                  onClick={() => setMode("walking")}
-                  className="flex-1"
-                  disabled={!selectedProducer || gpsStatus !== "available"}
-                >
-                  <Play className="mr-2 h-4 w-4" />
-                  Caminhada
-                </Button>
-              </div>
 
               {/* Stats - Only show when points are captured */}
               {points.length > 0 && (
@@ -473,27 +414,13 @@ const DemarcateArea: React.FC = () => {
               {/* Action Buttons */}
               <div className="flex gap-2">
                 <Button
-                  onClick={mode === "manual" ? addPoint : toggleWalkingMode}
+                  onClick={addPoint}
                   disabled={!selectedProducer || gpsStatus !== "available"}
                   className="flex-1"
                   size="lg"
                 >
-                  {mode === "manual" ? (
-                    <>
-                      <MapPin className="mr-2 h-4 w-4" />
-                      Capturar Ponto
-                    </>
-                  ) : isWalking ? (
-                    <>
-                      <Square className="mr-2 h-4 w-4" />
-                      Parar
-                    </>
-                  ) : (
-                    <>
-                      <Play className="mr-2 h-4 w-4" />
-                      Iniciar
-                    </>
-                  )}
+                  <MapPin className="mr-2 h-4 w-4" />
+                  Capturar Ponto
                 </Button>
                 
                 <Button variant="outline" onClick={removeLastPoint} disabled={points.length === 0} size="lg">
