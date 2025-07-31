@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, CreditCard } from "lucide-react";
+import { ArrowLeft, CreditCard, User, Shield, DollarSign, FileText } from "lucide-react";
 
 interface Producer {
   id: string;
@@ -100,146 +100,210 @@ const LoanRequest = () => {
     }, 1000);
   };
 
+  const selectedProducerData = producers.find(p => p.id === selectedProducer);
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-green-50 p-6">
-        <div className="text-center">Carregando...</div>
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
+        <div className="bg-white rounded-3xl p-8 shadow-xl">
+          <div className="animate-spin h-8 w-8 border-4 border-purple-600 border-t-transparent rounded-full mx-auto"></div>
+          <p className="text-center mt-4 text-gray-600">Carregando...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-green-50">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
       {/* Header */}
-      <div className="bg-white px-6 pt-12 pb-6">
-        <div className="flex items-center justify-between mb-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/dashboard")}
-            className="rounded-full"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold text-gray-900">Pedir Empréstimo</h1>
-          <div className="w-10" /> {/* Spacer */}
+      <div className="bg-white/80 backdrop-blur-sm sticky top-0 z-50 border-b border-white/20">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/dashboard")}
+              className="rounded-full hover:bg-purple-100"
+            >
+              <ArrowLeft className="h-5 w-5 text-gray-700" />
+            </Button>
+            <h1 className="text-xl font-bold text-gray-900">Pedido de Empréstimo</h1>
+            <div className="w-10" />
+          </div>
         </div>
       </div>
 
-      <div className="px-6 pb-24">
+      <div className="px-6 py-8 pb-24 max-w-md mx-auto">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Seleção do Produtor */}
-          <Card className="bg-white rounded-2xl shadow-sm border-0">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg">Selecionar Produtor</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Select value={selectedProducer} onValueChange={setSelectedProducer}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Escolha um produtor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {producers.map((producer) => (
-                    <SelectItem key={producer.id} value={producer.id}>
-                      {producer.nome_completo} - NUIT: {producer.nuit}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
-
-          {/* Consentimento da Comunidade */}
-          <Card className="bg-white rounded-2xl shadow-sm border-0">
-            <CardContent className="pt-6">
-              <div className="flex items-start space-x-3">
-                <Checkbox
-                  id="consent"
-                  checked={communityConsent}
-                  onCheckedChange={(checked) => setCommunityConsent(checked === true)}
-                />
-                <Label htmlFor="consent" className="text-sm leading-relaxed">
-                  Confirmo que há consentimento da comunidade para este pedido de empréstimo
-                </Label>
+          <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-6 shadow-lg border border-white/50">
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center mr-4">
+                <User className="h-6 w-6 text-purple-600" />
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Tipo e Valor do Empréstimo */}
-          <Card className="bg-white rounded-2xl shadow-sm border-0">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg">Detalhes do Empréstimo</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
               <div>
-                <Label className="text-sm font-medium mb-3 block">Tipo de Empréstimo</Label>
-                <RadioGroup value={loanType} onValueChange={setLoanType}>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="money" id="money" />
-                    <Label htmlFor="money">Dinheiro</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="item" id="item" />
-                    <Label htmlFor="item">Item/Produto</Label>
-                  </div>
-                </RadioGroup>
+                <h3 className="font-semibold text-gray-900">Beneficiário</h3>
+                <p className="text-sm text-gray-500">Selecione o produtor</p>
               </div>
+            </div>
+            
+            <Select value={selectedProducer} onValueChange={setSelectedProducer}>
+              <SelectTrigger className="bg-gray-50 border-0 rounded-2xl h-14">
+                <SelectValue placeholder="Escolha um produtor" />
+              </SelectTrigger>
+              <SelectContent>
+                {producers.map((producer) => (
+                  <SelectItem key={producer.id} value={producer.id}>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{producer.nome_completo}</span>
+                      <span className="text-xs text-gray-500">NUIT: {producer.nuit}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
+            {selectedProducerData && (
+              <div className="mt-4 p-4 bg-purple-50 rounded-2xl">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-medium text-gray-900">{selectedProducerData.nome_completo}</p>
+                    <p className="text-sm text-gray-600">NUIT: {selectedProducerData.nuit}</p>
+                  </div>
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Consentimento */}
+          <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-6 shadow-lg border border-white/50">
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center mr-4">
+                <Shield className="h-6 w-6 text-blue-600" />
+              </div>
               <div>
-                <Label htmlFor="value" className="text-sm font-medium">
-                  {loanType === "money" ? "Valor (MZN)" : "Valor Estimado (MZN)"}
+                <h3 className="font-semibold text-gray-900">Consentimento</h3>
+                <p className="text-sm text-gray-500">Aprovação da comunidade</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-2xl">
+              <Checkbox
+                id="consent"
+                checked={communityConsent}
+                onCheckedChange={(checked) => setCommunityConsent(checked === true)}
+                className="mt-0.5"
+              />
+              <Label htmlFor="consent" className="text-sm leading-relaxed text-gray-700">
+                Confirmo que há consentimento da comunidade para este pedido de empréstimo
+              </Label>
+            </div>
+          </div>
+
+          {/* Detalhes do Empréstimo */}
+          <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-6 shadow-lg border border-white/50">
+            <div className="flex items-center mb-6">
+              <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center mr-4">
+                <DollarSign className="h-6 w-6 text-green-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Detalhes</h3>
+                <p className="text-sm text-gray-500">Tipo e valor do empréstimo</p>
+              </div>
+            </div>
+
+            {/* Tipo de Empréstimo */}
+            <div className="mb-6">
+              <Label className="text-sm font-medium mb-3 block">Tipo de Empréstimo</Label>
+              <RadioGroup value={loanType} onValueChange={setLoanType} className="space-y-3">
+                <div className={`flex items-center space-x-3 p-4 rounded-2xl border-2 transition-all ${
+                  loanType === "money" ? "border-purple-200 bg-purple-50" : "border-gray-200 bg-gray-50"
+                }`}>
+                  <RadioGroupItem value="money" id="money" />
+                  <Label htmlFor="money" className="font-medium">Dinheiro</Label>
+                </div>
+                <div className={`flex items-center space-x-3 p-4 rounded-2xl border-2 transition-all ${
+                  loanType === "item" ? "border-purple-200 bg-purple-50" : "border-gray-200 bg-gray-50"
+                }`}>
+                  <RadioGroupItem value="item" id="item" />
+                  <Label htmlFor="item" className="font-medium">Item/Produto</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* Valor */}
+            <div className="mb-4">
+              <Label htmlFor="value" className="text-sm font-medium block mb-2">
+                {loanType === "money" ? "Valor (MZN)" : "Valor Estimado (MZN)"}
+              </Label>
+              <Input
+                id="value"
+                type="number"
+                placeholder="0.00"
+                value={loanValue}
+                onChange={(e) => setLoanValue(e.target.value)}
+                className="bg-gray-50 border-0 rounded-2xl h-14 text-lg font-semibold"
+              />
+            </div>
+
+            {/* Descrição do Item */}
+            {loanType === "item" && (
+              <div>
+                <Label htmlFor="item-description" className="text-sm font-medium block mb-2">
+                  Descrição do Item
                 </Label>
                 <Input
-                  id="value"
-                  type="number"
-                  placeholder="0.00"
-                  value={loanValue}
-                  onChange={(e) => setLoanValue(e.target.value)}
-                  className="mt-1"
+                  id="item-description"
+                  placeholder="Ex: Sementes de milho, ferramentas agrícolas..."
+                  value={itemDescription}
+                  onChange={(e) => setItemDescription(e.target.value)}
+                  className="bg-gray-50 border-0 rounded-2xl h-14"
                 />
               </div>
-
-              {loanType === "item" && (
-                <div>
-                  <Label htmlFor="item-description" className="text-sm font-medium">
-                    Descrição do Item
-                  </Label>
-                  <Input
-                    id="item-description"
-                    placeholder="Ex: Sementes de milho, ferramentas agrícolas..."
-                    value={itemDescription}
-                    onChange={(e) => setItemDescription(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            )}
+          </div>
 
           {/* Justificação */}
-          <Card className="bg-white rounded-2xl shadow-sm border-0">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg">Justificação</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                placeholder="Explique o motivo do empréstimo e como será utilizado..."
-                value={justification}
-                onChange={(e) => setJustification(e.target.value)}
-                className="min-h-[100px]"
-              />
-            </CardContent>
-          </Card>
+          <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-6 shadow-lg border border-white/50">
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center mr-4">
+                <FileText className="h-6 w-6 text-orange-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Justificação</h3>
+                <p className="text-sm text-gray-500">Motivo do empréstimo</p>
+              </div>
+            </div>
+            
+            <Textarea
+              placeholder="Explique o motivo do empréstimo e como será utilizado..."
+              value={justification}
+              onChange={(e) => setJustification(e.target.value)}
+              className="bg-gray-50 border-0 rounded-2xl min-h-[120px] resize-none"
+            />
+          </div>
 
           {/* Botão de Submissão */}
-          <Button
-            type="submit"
-            className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-2xl"
-            disabled={submitting}
-          >
-            <CreditCard className="h-5 w-5 mr-2" />
-            {submitting ? "Submetendo..." : "Submeter Pedido"}
-          </Button>
+          <div className="pt-4">
+            <Button
+              type="submit"
+              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white py-4 rounded-3xl text-lg font-semibold shadow-xl transform transition-all hover:scale-[1.02] disabled:opacity-50 disabled:scale-100"
+              disabled={submitting}
+            >
+              {submitting ? (
+                <div className="flex items-center">
+                  <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-3"></div>
+                  Submetendo...
+                </div>
+              ) : (
+                <div className="flex items-center">
+                  <CreditCard className="h-5 w-5 mr-3" />
+                  Submeter Pedido
+                </div>
+              )}
+            </Button>
+          </div>
         </form>
       </div>
     </div>
