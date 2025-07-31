@@ -9,8 +9,7 @@ import { MapPin, Play, Square, RotateCcw, Save, Loader2, ArrowLeft } from "lucid
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import { Loader } from "@googlemaps/js-api-loader";
 
 interface GpsPoint {
   id: string;
@@ -34,22 +33,22 @@ const DemarcateArea: React.FC = () => {
   const [points, setPoints] = useState<GpsPoint[]>([]);
   const [isWalking, setIsWalking] = useState(false);
   const [watchId, setWatchId] = useState<number | null>(null);
-  const [map, setMap] = useState<mapboxgl.Map | null>(null);
+  const [map, setMap] = useState<google.maps.Map | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [producers, setProducers] = useState<Producer[]>([]);
   const [selectedProducer, setSelectedProducer] = useState<string>("");
   const [parcelaName, setParcelaName] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   const mapContainer = useRef<HTMLDivElement>(null);
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
-  const polygonRef = useRef<any>(null);
+  const markersRef = useRef<google.maps.Marker[]>([]);
+  const polygonRef = useRef<google.maps.Polygon | null>(null);
 
   useEffect(() => {
     console.log("DemarcateArea: useEffect triggered");
     const initialize = async () => {
       try {
         await Promise.all([
-          initializeMapbox(),
+          initializeGoogleMaps(),
           loadProducers()
         ]);
         
@@ -269,47 +268,59 @@ const DemarcateArea: React.FC = () => {
     }
   };
 
-  const initializeMapbox = async (): Promise<void> => {
-    console.log("DemarcateArea: Initializing Mapbox");
+  const initializeGoogleMaps = async (): Promise<void> => {
+    console.log("DemarcateArea: Initializing Google Maps");
     try {
       if (!mapContainer.current) {
         console.log("DemarcateArea: No map container found");
         throw new Error("Map container not available");
       }
 
-      // Set Mapbox access token
-      mapboxgl.accessToken = 'KLV3F4L5RqU1UdgO';
-      console.log("DemarcateArea: Mapbox token set");
+      // Get Google Maps API key from Supabase Edge Function
+      const { data: keyData, error: keyError } = await supabase.functions.invoke('get-maps-key');
+      if (keyError || !keyData?.apiKey) {
+        throw new Error('Failed to get Google Maps API key');
+      }
+
+      // Initialize Google Maps Loader
+      const loader = new Loader({
+        apiKey: keyData.apiKey,
+        version: "weekly",
+        libraries: ["places"]
+      });
+
+      await loader.load();
+      console.log("DemarcateArea: Google Maps loaded");
 
       // Get user's current location
       console.log("DemarcateArea: Getting user location");
       const position = await getCurrentPosition();
-      const center: [number, number] = [position.coords.longitude, position.coords.latitude];
+      const center = { lat: position.coords.latitude, lng: position.coords.longitude };
       console.log("DemarcateArea: User location obtained", center);
 
       // Initialize map
-      const mapInstance = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/satellite-v9',
+      const mapInstance = new google.maps.Map(mapContainer.current, {
         center: center,
-        zoom: 16
+        zoom: 18,
+        mapTypeId: google.maps.MapTypeId.SATELLITE,
+        mapTypeControl: true,
+        streetViewControl: false,
+        fullscreenControl: true,
+        zoomControl: true
       });
 
-      // Add navigation controls
-      mapInstance.addControl(new mapboxgl.NavigationControl(), 'top-right');
-
       // Add click handler for manual point addition
-      mapInstance.on('click', (e) => {
-        if (mode === 'manual' && selectedProducer) {
-          addPoint(e.lngLat.lat, e.lngLat.lng);
+      mapInstance.addListener('click', (e: google.maps.MapMouseEvent) => {
+        if (mode === 'manual' && selectedProducer && e.latLng) {
+          addPoint(e.latLng.lat(), e.latLng.lng());
         }
       });
 
       setMap(mapInstance);
-      console.log("DemarcateArea: Mapbox initialized successfully");
+      console.log("DemarcateArea: Google Maps initialized successfully");
       toast.success("Mapa carregado com sucesso");
     } catch (error) {
-      console.error("DemarcateArea: Error initializing mapbox:", error);
+      console.error("DemarcateArea: Error initializing Google Maps:", error);
       toast.error("Erro ao carregar mapa");
       throw error; // Re-throw to be caught by the Promise.all
     }
@@ -319,88 +330,69 @@ const DemarcateArea: React.FC = () => {
     if (!map) return;
 
     // Clear existing markers
-    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current.forEach(marker => marker.setMap(null));
     markersRef.current = [];
 
     // Remove existing polygon
     if (polygonRef.current) {
-      map.removeLayer('polygon-fill');
-      map.removeLayer('polygon-outline');
-      map.removeSource('polygon');
+      polygonRef.current.setMap(null);
       polygonRef.current = null;
     }
 
     // Add markers for each point
     currentPoints.forEach((point, index) => {
-      const el = document.createElement('div');
-      el.className = 'marker';
-      el.style.backgroundColor = '#10b981';
-      el.style.width = '20px';
-      el.style.height = '20px';
-      el.style.borderRadius = '50%';
-      el.style.border = '2px solid white';
-      el.style.display = 'flex';
-      el.style.alignItems = 'center';
-      el.style.justifyContent = 'center';
-      el.style.fontSize = '10px';
-      el.style.fontWeight = 'bold';
-      el.style.color = 'white';
-      el.textContent = (index + 1).toString();
-
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat([point.lng, point.lat])
-        .addTo(map);
+      const marker = new google.maps.Marker({
+        position: { lat: point.lat, lng: point.lng },
+        map: map,
+        title: `Ponto ${index + 1}`,
+        label: {
+          text: (index + 1).toString(),
+          color: 'white',
+          fontWeight: 'bold'
+        },
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          fillColor: '#10b981',
+          fillOpacity: 1,
+          strokeColor: 'white',
+          strokeWeight: 2,
+          scale: 10
+        }
+      });
 
       markersRef.current.push(marker);
     });
 
     // Create polygon if we have at least 3 points
     if (currentPoints.length >= 3) {
-      const coordinates = currentPoints.map(point => [point.lng, point.lat]);
-      coordinates.push(coordinates[0]); // Close the polygon
+      const coordinates = currentPoints.map(point => ({ lat: point.lat, lng: point.lng }));
 
-      map.addSource('polygon', {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [coordinates]
-          },
-          properties: {}
-        }
+      const polygon = new google.maps.Polygon({
+        paths: coordinates,
+        strokeColor: '#10b981',
+        strokeOpacity: 1.0,
+        strokeWeight: 2,
+        fillColor: '#10b981',
+        fillOpacity: 0.3
       });
 
-      map.addLayer({
-        id: 'polygon-fill',
-        type: 'fill',
-        source: 'polygon',
-        paint: {
-          'fill-color': '#10b981',
-          'fill-opacity': 0.3
-        }
-      });
-
-      map.addLayer({
-        id: 'polygon-outline',
-        type: 'line',
-        source: 'polygon',
-        paint: {
-          'line-color': '#10b981',
-          'line-width': 2
-        }
-      });
-
-      polygonRef.current = true;
+      polygon.setMap(map);
+      polygonRef.current = polygon;
     }
 
     // Fit map to points if we have any
     if (currentPoints.length > 0) {
-      const bounds = new mapboxgl.LngLatBounds();
+      const bounds = new google.maps.LatLngBounds();
       currentPoints.forEach(point => {
-        bounds.extend([point.lng, point.lat]);
+        bounds.extend({ lat: point.lat, lng: point.lng });
       });
-      map.fitBounds(bounds, { padding: 50 });
+      map.fitBounds(bounds);
+      
+      // Ensure minimum zoom level
+      const listener = google.maps.event.addListener(map, "idle", () => {
+        if (map.getZoom()! > 20) map.setZoom(20);
+        google.maps.event.removeListener(listener);
+      });
     }
   };
 
@@ -597,7 +589,7 @@ const DemarcateArea: React.FC = () => {
           {/* Map Panel */}
           <Card>
             <CardHeader>
-              <CardTitle>Mapa Interativo</CardTitle>
+              <CardTitle>Mapa Interativo - Google Maps</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div 
