@@ -40,9 +40,11 @@ const DemarcateArea: React.FC = () => {
   const [parcelaName, setParcelaName] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
   const [googleMapsApiKey, setGoogleMapsApiKey] = useState<string>("");
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
   const mapContainer = useRef<HTMLDivElement>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
   const polygonRef = useRef<google.maps.Polygon | null>(null);
+  const loaderRef = useRef<Loader | null>(null);
 
   useEffect(() => {
     console.log("DemarcateArea: useEffect triggered");
@@ -279,6 +281,21 @@ const DemarcateArea: React.FC = () => {
     }
   };
 
+  const cleanupMapScript = () => {
+    // Remove existing Google Maps scripts to allow fresh load
+    const existingScripts = document.querySelectorAll('script[src*="maps.googleapis.com"]');
+    existingScripts.forEach(script => script.remove());
+    
+    // Clear the global google object
+    if (window.google) {
+      delete window.google;
+    }
+    
+    // Reset loader reference
+    loaderRef.current = null;
+    setIsMapLoaded(false);
+  };
+
   const initializeGoogleMaps = async (): Promise<void> => {
     console.log("DemarcateArea: Initializing Google Maps");
     try {
@@ -291,15 +308,24 @@ const DemarcateArea: React.FC = () => {
         throw new Error("Google Maps API key not provided");
       }
 
-      // Initialize Google Maps Loader
-      const loader = new Loader({
-        apiKey: googleMapsApiKey,
-        version: "weekly",
-        libraries: ["places"]
-      });
+      // If we already have a loader with different options, clean up first
+      if (loaderRef.current) {
+        cleanupMapScript();
+      }
 
-      await loader.load();
+      // Create new loader only if we don't have one or it's been cleaned up
+      if (!loaderRef.current) {
+        loaderRef.current = new Loader({
+          apiKey: googleMapsApiKey,
+          version: "weekly",
+          libraries: ["places"],
+          id: `google-maps-${Date.now()}` // Unique ID to avoid conflicts
+        });
+      }
+
+      await loaderRef.current.load();
       console.log("DemarcateArea: Google Maps loaded");
+      setIsMapLoaded(true);
 
       // Get user's current location
       console.log("DemarcateArea: Getting user location");
@@ -330,8 +356,8 @@ const DemarcateArea: React.FC = () => {
       toast.success("Mapa carregado com sucesso");
     } catch (error) {
       console.error("DemarcateArea: Error initializing Google Maps:", error);
-      toast.error("Erro ao carregar mapa");
-      throw error; // Re-throw to be caught by the Promise.all
+      toast.error("Erro ao carregar mapa: " + error.message);
+      setIsMapLoaded(false);
     }
   };
 
@@ -479,9 +505,11 @@ const DemarcateArea: React.FC = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => {
+                        cleanupMapScript();
                         setGoogleMapsApiKey("");
                         localStorage.removeItem('googleMapsApiKey');
                         setMap(null);
+                        setIsMapLoaded(false);
                         toast.info("Chave da API removida");
                       }}
                     >
