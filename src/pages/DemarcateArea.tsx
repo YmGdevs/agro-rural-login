@@ -15,17 +15,6 @@ import {
   Smartphone,
   Circle
 } from "lucide-react";
-import { MapContainer, TileLayer, Marker, Polygon, Popup, useMapEvents } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-
-// Fix for default markers in react-leaflet
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-});
 
 interface GpsPoint {
   id: string;
@@ -220,16 +209,32 @@ const DemarcateArea = () => {
     return deg * (Math.PI / 180);
   };
 
-  // Map click handler component
-  const MapClickHandler = () => {
-    useMapEvents({
-      click: (e) => {
-        if (mode === "manual" && !isWalking) {
-          addPoint(e.latlng.lat, e.latlng.lng);
-        }
-      },
-    });
-    return null;
+  // Simple map component using basic HTML and CSS
+  const SimpleMap = () => {
+    return (
+      <div className="relative w-full h-full bg-green-100 rounded-xl flex items-center justify-center">
+        <div className="text-center">
+          <MapPin className="h-12 w-12 text-green-600 mx-auto mb-2" />
+          <p className="text-green-800 font-medium">Mapa GPS</p>
+          <p className="text-sm text-green-600">
+            {currentPosition 
+              ? `Lat: ${currentPosition.lat.toFixed(4)}, Lng: ${currentPosition.lng.toFixed(4)}`
+              : "A obter localização..."
+            }
+          </p>
+          {points.length > 0 && (
+            <div className="mt-4">
+              <p className="text-sm text-green-700">{points.length} pontos marcados</p>
+              {points.length >= 3 && (
+                <div className="w-32 h-20 bg-green-200 rounded mx-auto mt-2 flex items-center justify-center">
+                  <div className="w-24 h-12 border-2 border-green-600 rounded bg-green-300/50"></div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   // Get user's current location on mount
@@ -319,47 +324,7 @@ const DemarcateArea = () => {
         <Card className="bg-white rounded-2xl shadow-sm border-0 mb-6 overflow-hidden">
           <CardContent className="p-0">
             <div className="h-80 relative">
-              <MapContainer
-                center={[currentPosition.lat, currentPosition.lng]}
-                zoom={16}
-                style={{ height: "100%", width: "100%" }}
-                className="rounded-2xl"
-              >
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                <MapClickHandler />
-                
-                {/* Current position marker */}
-                <Marker position={[currentPosition.lat, currentPosition.lng]}>
-                  <Popup>Sua localização atual</Popup>
-                </Marker>
-
-                {/* Area points */}
-                {points.map((point) => (
-                  <Marker key={point.id} position={[point.lat, point.lng]}>
-                    <Popup>
-                      Ponto {points.indexOf(point) + 1}<br />
-                      Precisão: {point.accuracy.toFixed(1)}m<br />
-                      {point.timestamp.toLocaleTimeString()}
-                    </Popup>
-                  </Marker>
-                ))}
-
-                {/* Polygon if we have enough points */}
-                {points.length >= 3 && (
-                  <Polygon
-                    positions={points.map(p => [p.lat, p.lng])}
-                    pathOptions={{
-                      fillColor: "green",
-                      fillOpacity: 0.2,
-                      color: "green",
-                      weight: 2
-                    }}
-                  />
-                )}
-              </MapContainer>
+              <SimpleMap />
             </div>
           </CardContent>
         </Card>
