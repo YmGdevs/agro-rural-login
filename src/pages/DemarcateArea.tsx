@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { Loader } from "@googlemaps/js-api-loader";
 import { 
   ArrowLeft, 
   MapPin, 
@@ -13,7 +14,8 @@ import {
   Save, 
   Navigation,
   Smartphone,
-  Circle
+  Circle,
+  Settings
 } from "lucide-react";
 
 interface GpsPoint {
@@ -26,6 +28,12 @@ interface GpsPoint {
 
 type DemarcationMode = "manual" | "walking";
 
+declare global {
+  interface Window {
+    google: any;
+  }
+}
+
 const DemarcateArea = () => {
   const navigate = useNavigate();
   const [mode, setMode] = useState<DemarcationMode>("manual");
@@ -34,6 +42,11 @@ const DemarcateArea = () => {
   const [currentPosition, setCurrentPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
   const [area, setArea] = useState<number>(0);
+  const [googleMap, setGoogleMap] = useState<any>(null);
+  const [polygon, setPolygon] = useState<any>(null);
+  const [markers, setMarkers] = useState<any[]>([]);
+  const [mapApiKey, setMapApiKey] = useState<string>("");
+  const mapRef = useRef<HTMLDivElement>(null);
   const walkingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Calculate area using shoelace formula
@@ -109,7 +122,12 @@ const DemarcateArea = () => {
         toast.warning(`Precisão GPS baixa: ${position.coords.accuracy.toFixed(1)}m`);
       }
 
-      setPoints(prev => [...prev, newPoint]);
+      setPoints(prev => {
+        const updated = [...prev, newPoint];
+        // Update map display after state update
+        setTimeout(() => updateMapDisplay(), 100);
+        return updated;
+      });
       setGpsAccuracy(position.coords.accuracy || null);
       toast.success(`Ponto ${points.length + 1} capturado`);
     } catch (error) {
@@ -142,7 +160,11 @@ const DemarcateArea = () => {
   // Remove last point
   const removeLastPoint = () => {
     if (points.length > 0) {
-      setPoints(prev => prev.slice(0, -1));
+      setPoints(prev => {
+        const updated = prev.slice(0, -1);
+        setTimeout(() => updateMapDisplay(), 100);
+        return updated;
+      });
       toast.info("Último ponto removido");
     }
   };
@@ -151,6 +173,7 @@ const DemarcateArea = () => {
   const clearAllPoints = () => {
     setPoints([]);
     setArea(0);
+    setTimeout(() => updateMapDisplay(), 100);
     toast.info("Todos os pontos removidos");
   };
 
@@ -209,33 +232,110 @@ const DemarcateArea = () => {
     return deg * (Math.PI / 180);
   };
 
-  // Simple map component using basic HTML and CSS
-  const SimpleMap = () => {
-    return (
-      <div className="relative w-full h-full bg-green-100 rounded-xl flex items-center justify-center">
-        <div className="text-center">
-          <MapPin className="h-12 w-12 text-green-600 mx-auto mb-2" />
-          <p className="text-green-800 font-medium">Mapa GPS</p>
-          <p className="text-sm text-green-600">
-            {currentPosition 
-              ? `Lat: ${currentPosition.lat.toFixed(4)}, Lng: ${currentPosition.lng.toFixed(4)}`
-              : "A obter localização..."
-            }
-          </p>
-          {points.length > 0 && (
-            <div className="mt-4">
-              <p className="text-sm text-green-700">{points.length} pontos marcados</p>
-              {points.length >= 3 && (
-                <div className="w-32 h-20 bg-green-200 rounded mx-auto mt-2 flex items-center justify-center">
-                  <div className="w-24 h-12 border-2 border-green-600 rounded bg-green-300/50"></div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    );
+  // Initialize Google Maps
+  const initializeGoogleMaps = async () => {
+    if (!mapApiKey) return;
+    
+    try {
+      const loader = new Loader({
+        apiKey: mapApiKey,
+        version: "weekly",
+        libraries: ["places", "geometry"]
+      });
+
+      await loader.load();
+      
+      if (!mapRef.current || !currentPosition) return;
+
+      const map = new window.google.maps.Map(mapRef.current, {
+        center: currentPosition,
+        zoom: 18,
+        mapTypeId: window.google.maps.MapTypeId.SATELLITE,
+        tilt: 0,
+        heading: 0,
+        disableDefaultUI: false,
+        zoomControl: true,
+        streetViewControl: false,
+        fullscreenControl: false,
+      });
+
+      // Add click listener for manual mode
+      map.addListener("click", (e: any) => {
+        if (mode === "manual" && !isWalking) {
+          addPoint(e.latLng.lat(), e.latLng.lng());
+        }
+      });
+
+      setGoogleMap(map);
+      
+      // Add current location marker
+      new window.google.maps.Marker({
+        position: currentPosition,
+        map: map,
+        title: "Sua localização atual",
+        icon: {
+          url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23059669'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3C/svg%3E",
+          scaledSize: new window.google.maps.Size(20, 20),
+        }
+      });
+
+      toast.success("Google Maps carregado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao carregar Google Maps:", error);
+      toast.error("Erro ao carregar Google Maps");
+    }
   };
+
+  // Update Google Maps markers and polygon
+  const updateMapDisplay = () => {
+    if (!googleMap) return;
+
+    // Clear existing markers
+    markers.forEach(marker => marker.setMap(null));
+    setMarkers([]);
+
+    // Add new markers
+    const newMarkers = points.map((point, index) => {
+      return new window.google.maps.Marker({
+        position: { lat: point.lat, lng: point.lng },
+        map: googleMap,
+        title: `Ponto ${index + 1}`,
+        label: (index + 1).toString(),
+        icon: {
+          url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23dc2626'%3E%3Cpath d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z'/%3E%3C/svg%3E",
+          scaledSize: new window.google.maps.Size(30, 30),
+        }
+      });
+    });
+
+    setMarkers(newMarkers);
+
+    // Update polygon
+    if (polygon) {
+      polygon.setMap(null);
+    }
+
+    if (points.length >= 3) {
+      const newPolygon = new window.google.maps.Polygon({
+        paths: points.map(p => ({ lat: p.lat, lng: p.lng })),
+        strokeColor: "#059669",
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+        fillColor: "#059669",
+        fillOpacity: 0.2,
+      });
+
+      newPolygon.setMap(googleMap);
+      setPolygon(newPolygon);
+    }
+  };
+
+  // Initialize Google Maps when API key is available
+  useEffect(() => {
+    if (mapApiKey && currentPosition) {
+      initializeGoogleMaps();
+    }
+  }, [mapApiKey, currentPosition]);
 
   // Get user's current location on mount
   useEffect(() => {
@@ -296,6 +396,33 @@ const DemarcateArea = () => {
           </div>
         </div>
 
+        {/* Google Maps API Key Input */}
+        {!mapApiKey && (
+          <Card className="bg-blue-50 rounded-xl border-blue-200 mb-4">
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-3">
+                <Settings className="h-5 w-5 text-blue-600" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-blue-900">Configure Google Maps</h3>
+                  <p className="text-sm text-blue-700">Insira sua chave API do Google Maps para ver mapas de satélite</p>
+                </div>
+              </div>
+              <div className="mt-3 space-y-2">
+                <input
+                  type="text"
+                  placeholder="Chave API do Google Maps"
+                  value={mapApiKey}
+                  onChange={(e) => setMapApiKey(e.target.value)}
+                  className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-blue-600">
+                  Obtenha sua chave em: <a href="https://console.cloud.google.com/apis/credentials" target="_blank" className="underline">Google Cloud Console</a>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Mode Toggle */}
         <div className="flex space-x-2 mb-4">
           <Button
@@ -321,10 +448,23 @@ const DemarcateArea = () => {
 
       <div className="px-6 pb-6">
         {/* Map Container */}
+        {/* Map Container */}
         <Card className="bg-white rounded-2xl shadow-sm border-0 mb-6 overflow-hidden">
           <CardContent className="p-0">
             <div className="h-80 relative">
-              <SimpleMap />
+              {mapApiKey ? (
+                <div ref={mapRef} className="w-full h-full rounded-2xl" />
+              ) : (
+                <div className="relative w-full h-full bg-gray-100 rounded-xl flex items-center justify-center">
+                  <div className="text-center">
+                    <Settings className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                    <p className="text-gray-600 font-medium">Configure Google Maps API</p>
+                    <p className="text-sm text-gray-500">
+                      Insira sua chave API acima para ver mapas de satélite
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
