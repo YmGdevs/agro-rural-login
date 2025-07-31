@@ -135,7 +135,11 @@ const ProducersList = () => {
                 </TableHeader>
                 <TableBody>
                   {filteredProducers.map((producer) => (
-                    <TableRow key={producer.id}>
+                    <TableRow 
+                      key={producer.id}
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => navigate(`/producer/${producer.id}/parcelas`)}
+                    >
                       <TableCell className="font-medium">
                         {producer.nome_completo}
                       </TableCell>
