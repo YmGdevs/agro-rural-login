@@ -58,23 +58,23 @@ const Dashboard = () => {
 
       <div className="p-6 space-y-6">
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 gap-4">
-          <h2 className="text-lg font-semibold text-gray-800 mb-2">Resumo</h2>
-          {summaryData.map((item, index) => (
-            <Card key={index} className="bg-white shadow-md border-0">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">{item.title}</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-1">{item.value}</p>
-                  </div>
-                  <div className="bg-green-100 p-3 rounded-full">
-                    <item.icon className="h-6 w-6 text-green-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold text-gray-800">Resumo</h2>
+          <div className="grid grid-cols-3 gap-3">
+            {summaryData.map((item, index) => (
+              <Button
+                key={index}
+                variant="outline"
+                className="h-20 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl shadow-sm flex flex-col items-center justify-center p-3 space-y-1"
+              >
+                <item.icon className="h-5 w-5 text-green-600" />
+                <span className="text-xl font-bold text-gray-900">{item.value}</span>
+                <span className="text-xs text-gray-600 text-center leading-tight">
+                  {item.title}
+                </span>
+              </Button>
+            ))}
+          </div>
         </div>
 
         {/* Action Buttons */}
