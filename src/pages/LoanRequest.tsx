@@ -104,10 +104,10 @@ const LoanRequest = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
-        <div className="bg-white rounded-3xl p-8 shadow-xl">
-          <div className="animate-spin h-8 w-8 border-4 border-purple-600 border-t-transparent rounded-full mx-auto"></div>
-          <p className="text-center mt-4 text-gray-600">Carregando...</p>
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl p-6 shadow-xl">
+          <div className="animate-spin h-6 w-6 border-3 border-purple-600 border-t-transparent rounded-full mx-auto"></div>
+          <p className="text-center mt-3 text-gray-600 text-sm">Carregando...</p>
         </div>
       </div>
     );
@@ -117,45 +117,45 @@ const LoanRequest = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
       {/* Header */}
       <div className="bg-white/80 backdrop-blur-sm sticky top-0 z-50 border-b border-white/20">
-        <div className="px-6 py-4">
+        <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => navigate("/dashboard")}
-              className="rounded-full hover:bg-purple-100"
+              className="rounded-full hover:bg-purple-100 h-9 w-9"
             >
-              <ArrowLeft className="h-5 w-5 text-gray-700" />
+              <ArrowLeft className="h-4 w-4 text-gray-700" />
             </Button>
-            <h1 className="text-xl font-bold text-gray-900">Pedido de Empréstimo</h1>
-            <div className="w-10" />
+            <h1 className="text-lg font-bold text-gray-900">Pedido de Empréstimo</h1>
+            <div className="w-9" />
           </div>
         </div>
       </div>
 
-      <div className="px-6 py-8 pb-24 max-w-md mx-auto">
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="px-4 py-4 pb-20">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* Seleção do Produtor */}
-          <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-6 shadow-lg border border-white/50">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center mr-4">
-                <User className="h-6 w-6 text-purple-600" />
+          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-white/50">
+            <div className="flex items-center mb-3">
+              <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mr-3">
+                <User className="h-5 w-5 text-purple-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Beneficiário</h3>
-                <p className="text-sm text-gray-500">Selecione o produtor</p>
+                <h3 className="font-semibold text-gray-900 text-sm">Beneficiário</h3>
+                <p className="text-xs text-gray-500">Selecione o produtor</p>
               </div>
             </div>
             
             <Select value={selectedProducer} onValueChange={setSelectedProducer}>
-              <SelectTrigger className="bg-gray-50 border-0 rounded-2xl h-14">
+              <SelectTrigger className="bg-gray-50 border-0 rounded-xl h-12">
                 <SelectValue placeholder="Escolha um produtor" />
               </SelectTrigger>
               <SelectContent>
                 {producers.map((producer) => (
                   <SelectItem key={producer.id} value={producer.id}>
                     <div className="flex flex-col">
-                      <span className="font-medium">{producer.nome_completo}</span>
+                      <span className="font-medium text-sm">{producer.nome_completo}</span>
                       <span className="text-xs text-gray-500">NUIT: {producer.nuit}</span>
                     </div>
                   </SelectItem>
@@ -164,11 +164,11 @@ const LoanRequest = () => {
             </Select>
 
             {selectedProducerData && (
-              <div className="mt-4 p-4 bg-purple-50 rounded-2xl">
+              <div className="mt-3 p-3 bg-purple-50 rounded-xl">
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="font-medium text-gray-900">{selectedProducerData.nome_completo}</p>
-                    <p className="text-sm text-gray-600">NUIT: {selectedProducerData.nuit}</p>
+                    <p className="font-medium text-gray-900 text-sm">{selectedProducerData.nome_completo}</p>
+                    <p className="text-xs text-gray-600">NUIT: {selectedProducerData.nuit}</p>
                   </div>
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 </div>
@@ -177,64 +177,64 @@ const LoanRequest = () => {
           </div>
 
           {/* Consentimento */}
-          <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-6 shadow-lg border border-white/50">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center mr-4">
-                <Shield className="h-6 w-6 text-blue-600" />
+          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-white/50">
+            <div className="flex items-center mb-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-3">
+                <Shield className="h-5 w-5 text-blue-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Consentimento</h3>
-                <p className="text-sm text-gray-500">Aprovação da comunidade</p>
+                <h3 className="font-semibold text-gray-900 text-sm">Consentimento</h3>
+                <p className="text-xs text-gray-500">Aprovação da comunidade</p>
               </div>
             </div>
             
-            <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-2xl">
+            <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-xl">
               <Checkbox
                 id="consent"
                 checked={communityConsent}
                 onCheckedChange={(checked) => setCommunityConsent(checked === true)}
                 className="mt-0.5"
               />
-              <Label htmlFor="consent" className="text-sm leading-relaxed text-gray-700">
+              <Label htmlFor="consent" className="text-xs leading-relaxed text-gray-700">
                 Confirmo que há consentimento da comunidade para este pedido de empréstimo
               </Label>
             </div>
           </div>
 
           {/* Detalhes do Empréstimo */}
-          <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-6 shadow-lg border border-white/50">
-            <div className="flex items-center mb-6">
-              <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center mr-4">
-                <DollarSign className="h-6 w-6 text-green-600" />
+          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-white/50">
+            <div className="flex items-center mb-4">
+              <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mr-3">
+                <DollarSign className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Detalhes</h3>
-                <p className="text-sm text-gray-500">Tipo e valor do empréstimo</p>
+                <h3 className="font-semibold text-gray-900 text-sm">Detalhes</h3>
+                <p className="text-xs text-gray-500">Tipo e valor do empréstimo</p>
               </div>
             </div>
 
             {/* Tipo de Empréstimo */}
-            <div className="mb-6">
-              <Label className="text-sm font-medium mb-3 block">Tipo de Empréstimo</Label>
-              <RadioGroup value={loanType} onValueChange={setLoanType} className="space-y-3">
-                <div className={`flex items-center space-x-3 p-4 rounded-2xl border-2 transition-all ${
+            <div className="mb-4">
+              <Label className="text-xs font-medium mb-2 block">Tipo de Empréstimo</Label>
+              <RadioGroup value={loanType} onValueChange={setLoanType} className="space-y-2">
+                <div className={`flex items-center space-x-2 p-3 rounded-xl border-2 transition-all ${
                   loanType === "money" ? "border-purple-200 bg-purple-50" : "border-gray-200 bg-gray-50"
                 }`}>
                   <RadioGroupItem value="money" id="money" />
-                  <Label htmlFor="money" className="font-medium">Dinheiro</Label>
+                  <Label htmlFor="money" className="font-medium text-sm">Dinheiro</Label>
                 </div>
-                <div className={`flex items-center space-x-3 p-4 rounded-2xl border-2 transition-all ${
+                <div className={`flex items-center space-x-2 p-3 rounded-xl border-2 transition-all ${
                   loanType === "item" ? "border-purple-200 bg-purple-50" : "border-gray-200 bg-gray-50"
                 }`}>
                   <RadioGroupItem value="item" id="item" />
-                  <Label htmlFor="item" className="font-medium">Item/Produto</Label>
+                  <Label htmlFor="item" className="font-medium text-sm">Item/Produto</Label>
                 </div>
               </RadioGroup>
             </div>
 
             {/* Valor */}
-            <div className="mb-4">
-              <Label htmlFor="value" className="text-sm font-medium block mb-2">
+            <div className="mb-3">
+              <Label htmlFor="value" className="text-xs font-medium block mb-1">
                 {loanType === "money" ? "Valor (MZN)" : "Valor Estimado (MZN)"}
               </Label>
               <Input
@@ -243,14 +243,14 @@ const LoanRequest = () => {
                 placeholder="0.00"
                 value={loanValue}
                 onChange={(e) => setLoanValue(e.target.value)}
-                className="bg-gray-50 border-0 rounded-2xl h-14 text-lg font-semibold"
+                className="bg-gray-50 border-0 rounded-xl h-12 text-base font-semibold"
               />
             </div>
 
             {/* Descrição do Item */}
             {loanType === "item" && (
               <div>
-                <Label htmlFor="item-description" className="text-sm font-medium block mb-2">
+                <Label htmlFor="item-description" className="text-xs font-medium block mb-1">
                   Descrição do Item
                 </Label>
                 <Input
@@ -258,21 +258,21 @@ const LoanRequest = () => {
                   placeholder="Ex: Sementes de milho, ferramentas agrícolas..."
                   value={itemDescription}
                   onChange={(e) => setItemDescription(e.target.value)}
-                  className="bg-gray-50 border-0 rounded-2xl h-14"
+                  className="bg-gray-50 border-0 rounded-xl h-12"
                 />
               </div>
             )}
           </div>
 
           {/* Justificação */}
-          <div className="bg-white/70 backdrop-blur-sm rounded-3xl p-6 shadow-lg border border-white/50">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-orange-100 rounded-2xl flex items-center justify-center mr-4">
-                <FileText className="h-6 w-6 text-orange-600" />
+          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-white/50">
+            <div className="flex items-center mb-3">
+              <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center mr-3">
+                <FileText className="h-5 w-5 text-orange-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Justificação</h3>
-                <p className="text-sm text-gray-500">Motivo do empréstimo</p>
+                <h3 className="font-semibold text-gray-900 text-sm">Justificação</h3>
+                <p className="text-xs text-gray-500">Motivo do empréstimo</p>
               </div>
             </div>
             
@@ -280,25 +280,25 @@ const LoanRequest = () => {
               placeholder="Explique o motivo do empréstimo e como será utilizado..."
               value={justification}
               onChange={(e) => setJustification(e.target.value)}
-              className="bg-gray-50 border-0 rounded-2xl min-h-[120px] resize-none"
+              className="bg-gray-50 border-0 rounded-xl min-h-[100px] resize-none text-sm"
             />
           </div>
 
           {/* Botão de Submissão */}
-          <div className="pt-4">
+          <div className="pt-2">
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white py-4 rounded-3xl text-lg font-semibold shadow-xl transform transition-all hover:scale-[1.02] disabled:opacity-50 disabled:scale-100"
+              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white py-3 rounded-2xl text-base font-semibold shadow-xl transform transition-all hover:scale-[1.02] disabled:opacity-50 disabled:scale-100"
               disabled={submitting}
             >
               {submitting ? (
                 <div className="flex items-center">
-                  <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-3"></div>
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
                   Submetendo...
                 </div>
               ) : (
                 <div className="flex items-center">
-                  <CreditCard className="h-5 w-5 mr-3" />
+                  <CreditCard className="h-4 w-4 mr-2" />
                   Submeter Pedido
                 </div>
               )}
