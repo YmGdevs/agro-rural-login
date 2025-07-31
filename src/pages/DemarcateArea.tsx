@@ -39,18 +39,22 @@ const DemarcateArea: React.FC = () => {
   const [selectedProducer, setSelectedProducer] = useState<string>("");
   const [parcelaName, setParcelaName] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
+  const [googleMapsApiKey, setGoogleMapsApiKey] = useState<string>("");
   const mapContainer = useRef<HTMLDivElement>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
   const polygonRef = useRef<google.maps.Polygon | null>(null);
 
   useEffect(() => {
     console.log("DemarcateArea: useEffect triggered");
+    // Load saved API key from localStorage
+    const savedApiKey = localStorage.getItem('googleMapsApiKey');
+    if (savedApiKey) {
+      setGoogleMapsApiKey(savedApiKey);
+    }
+
     const initialize = async () => {
       try {
-        await Promise.all([
-          initializeGoogleMaps(),
-          loadProducers()
-        ]);
+        await loadProducers();
         
         // Auto-select producer if passed in URL
         const producerIdFromUrl = searchParams.get('producerId');
@@ -70,6 +74,13 @@ const DemarcateArea: React.FC = () => {
     
     initialize();
   }, [searchParams]);
+
+  // Initialize map when API key is available
+  useEffect(() => {
+    if (googleMapsApiKey && !map) {
+      initializeGoogleMaps();
+    }
+  }, [googleMapsApiKey, map]);
 
   const loadProducers = async (): Promise<void> => {
     console.log("DemarcateArea: Loading producers");
@@ -276,15 +287,13 @@ const DemarcateArea: React.FC = () => {
         throw new Error("Map container not available");
       }
 
-      // Get Google Maps API key from Supabase Edge Function
-      const { data: keyData, error: keyError } = await supabase.functions.invoke('get-maps-key');
-      if (keyError || !keyData?.apiKey) {
-        throw new Error('Failed to get Google Maps API key');
+      if (!googleMapsApiKey) {
+        throw new Error("Google Maps API key not provided");
       }
 
       // Initialize Google Maps Loader
       const loader = new Loader({
-        apiKey: keyData.apiKey,
+        apiKey: googleMapsApiKey,
         version: "weekly",
         libraries: ["places"]
       });
@@ -432,6 +441,57 @@ const DemarcateArea: React.FC = () => {
               <CardTitle>Configuração da Parcela</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Google Maps API Key */}
+              {!googleMapsApiKey && (
+                <div className="space-y-2">
+                  <Label htmlFor="api-key">Chave da API do Google Maps</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="api-key"
+                      type="password"
+                      placeholder="Cole aqui sua chave da API do Google Maps"
+                      value={googleMapsApiKey}
+                      onChange={(e) => setGoogleMapsApiKey(e.target.value)}
+                    />
+                    <Button
+                      onClick={() => {
+                        if (googleMapsApiKey) {
+                          localStorage.setItem('googleMapsApiKey', googleMapsApiKey);
+                          toast.success("Chave da API salva!");
+                        }
+                      }}
+                      disabled={!googleMapsApiKey}
+                    >
+                      Salvar
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Obtenha sua chave em: <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-primary underline">Google Cloud Console</a>
+                  </p>
+                </div>
+              )}
+
+              {googleMapsApiKey && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Chave da API configurada</Label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setGoogleMapsApiKey("");
+                        localStorage.removeItem('googleMapsApiKey');
+                        setMap(null);
+                        toast.info("Chave da API removida");
+                      }}
+                    >
+                      Alterar
+                    </Button>
+                  </div>
+                  <p className="text-sm text-green-600">✓ Mapa do Google ativo</p>
+                </div>
+              )}
+
               {/* Producer Selection */}
               <div className="space-y-2">
                 <Label htmlFor="producer">Selecionar Produtor</Label>
@@ -471,7 +531,7 @@ const DemarcateArea: React.FC = () => {
                   variant={mode === "manual" ? "default" : "outline"}
                   onClick={() => setMode("manual")}
                   className="flex-1"
-                  disabled={!selectedProducer}
+                  disabled={!selectedProducer || !googleMapsApiKey}
                 >
                   <MapPin className="mr-2 h-4 w-4" />
                   Manual
@@ -480,7 +540,7 @@ const DemarcateArea: React.FC = () => {
                   variant={mode === "walking" ? "default" : "outline"}
                   onClick={() => setMode("walking")}
                   className="flex-1"
-                  disabled={!selectedProducer}
+                  disabled={!selectedProducer || !googleMapsApiKey}
                 >
                   <Play className="mr-2 h-4 w-4" />
                   Caminhada
@@ -511,7 +571,7 @@ const DemarcateArea: React.FC = () => {
               <div className="flex gap-2">
                 <Button
                   onClick={mode === "manual" ? () => addPoint() : toggleWalkingMode}
-                  disabled={!selectedProducer}
+                  disabled={!selectedProducer || !googleMapsApiKey}
                   className="flex-1"
                 >
                   {mode === "manual" ? (
