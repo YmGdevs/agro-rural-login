@@ -1,84 +1,96 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/hooks/useAuth";
-import { LogIn, Users, MapPin } from "lucide-react";
+import { Sprout, User, Lock } from "lucide-react";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
 
-  useEffect(() => {
-    if (!loading && user) {
-      navigate("/dashboard");
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!username || !password) {
+      toast.error("Por favor, preencha todos os campos", {
+        description: "Nome de utilizador e senha são obrigatórios",
+      });
+      return;
     }
-  }, [user, loading, navigate]);
+    
+    toast.success("Login realizado com sucesso!", {
+      description: "Bem-vindo ao sistema de extensionistas agrícolas",
+    });
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
-      </div>
-    );
-  }
+    // Navigate to dashboard after successful login
+    setTimeout(() => {
+      navigate("/dashboard");
+    }, 1000);
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
-      <div className="max-w-4xl mx-auto text-center">
-        <Card className="mb-8 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-4xl font-bold text-green-800 mb-4">
-              MilAgre
-            </CardTitle>
-            <CardDescription className="text-xl text-gray-600">
-              Sistema de Gestão Agrícola
+    <div className="min-h-screen bg-gradient-to-br from-background via-accent/30 to-secondary flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-2xl border-2 border-border/50">
+        <CardHeader className="text-center space-y-4 pb-8">
+          <div className="mx-auto w-20 h-20 bg-gradient-to-br from-primary to-forest-green rounded-full flex items-center justify-center shadow-lg">
+            <Sprout className="w-10 h-10 text-primary-foreground" />
+          </div>
+          <div>
+            <CardTitle className="text-2xl font-bold text-foreground">IAOM</CardTitle>
+            <CardDescription className="text-muted-foreground mt-2">
+              Sistema de Extensionistas Agrícolas
             </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <p className="text-lg text-gray-700 leading-relaxed">
-              Bem-vindo ao sistema integrado de gestão agrícola. 
-              Gerencie produtores, demarque áreas e acompanhe o desenvolvimento rural.
-            </p>
-            
-            <div className="grid md:grid-cols-3 gap-6 mt-8">
-              <div className="flex flex-col items-center p-4 bg-green-50 rounded-lg">
-                <Users className="h-12 w-12 text-green-600 mb-3" />
-                <h3 className="font-semibold text-green-800">Gestão de Produtores</h3>
-                <p className="text-sm text-gray-600 text-center mt-2">
-                  Registe e acompanhe produtores rurais
-                </p>
-              </div>
-              
-              <div className="flex flex-col items-center p-4 bg-blue-50 rounded-lg">
-                <MapPin className="h-12 w-12 text-blue-600 mb-3" />
-                <h3 className="font-semibold text-blue-800">Demarcação de Áreas</h3>
-                <p className="text-sm text-gray-600 text-center mt-2">
-                  Delimite e gira áreas agrícolas
-                </p>
-              </div>
-              
-              <div className="flex flex-col items-center p-4 bg-yellow-50 rounded-lg">
-                <LogIn className="h-12 w-12 text-yellow-600 mb-3" />
-                <h3 className="font-semibold text-yellow-800">Acesso Seguro</h3>
-                <p className="text-sm text-gray-600 text-center mt-2">
-                  Sistema protegido por autenticação
-                </p>
+          </div>
+        </CardHeader>
+        
+        <CardContent>
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="username" className="text-foreground font-medium">
+                Nome de Utilizador
+              </Label>
+              <div className="relative">
+                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="Digite seu nome de utilizador"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="pl-10 h-12 bg-input border-border focus:border-primary transition-colors"
+                />
               </div>
             </div>
             
-            <div className="mt-8">
-              <Button 
-                onClick={() => navigate("/auth")} 
-                size="lg"
-                className="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-8 text-lg"
-              >
-                Aceder ao Sistema
-              </Button>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-foreground font-medium">
+                Senha
+              </Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Digite sua senha"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-10 h-12 bg-input border-border focus:border-primary transition-colors"
+                />
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+            
+            <Button 
+              type="submit" 
+              className="w-full h-12 bg-gradient-to-r from-primary to-forest-green hover:from-primary/90 hover:to-forest-green/90 text-primary-foreground font-semibold text-lg shadow-lg transition-all duration-200 hover:shadow-xl"
+            >
+              Entrar
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };
