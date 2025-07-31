@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { MapPin, RotateCcw, Save, Loader2, ArrowLeft, Download, Clock, Target } from "lucide-react";
+import { MapPin, RotateCcw, Save, Loader2, ArrowLeft, Clock, Target } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -246,26 +246,6 @@ const DemarcateArea: React.FC = () => {
     }
   };
 
-  const exportToCSV = () => {
-    if (points.length === 0) {
-      toast.error("Nenhum ponto para exportar");
-      return;
-    }
-
-    const header = "Ponto,Latitude,Longitude,Precisão(m),Timestamp\n";
-    const csvContent = points.map((point, index) => 
-      `${index + 1},${point.lat},${point.lng},${point.accuracy.toFixed(2)},${point.timestamp.toISOString()}`
-    ).join("\n");
-
-    const blob = new Blob([header + csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${parcelaName || 'parcela'}_coordenadas.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-    toast.success("Arquivo CSV exportado");
-  };
 
   const exportToGPX = () => {
     if (points.length === 0) {
@@ -442,26 +422,6 @@ const DemarcateArea: React.FC = () => {
                 </Button>
               </div>
 
-              {/* Export Options */}
-              {points.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Exportar Dados</Label>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={exportToCSV}>
-                      <Download className="mr-2 h-3 w-3" />
-                      CSV
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={exportToGPX}>
-                      <Download className="mr-2 h-3 w-3" />
-                      GPX
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={exportToKML}>
-                      <Download className="mr-2 h-3 w-3" />
-                      KML
-                    </Button>
-                  </div>
-                </div>
-              )}
 
             </CardContent>
           </Card>
