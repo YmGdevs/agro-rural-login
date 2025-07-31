@@ -466,19 +466,13 @@ const DemarcateArea: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Coordinates Panel */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Coordenadas GPS Capturadas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {points.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <MapPin className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Nenhum ponto capturado ainda</p>
-                  <p className="text-sm">Comece selecionando um produtor e capturando pontos GPS</p>
-                </div>
-              ) : (
+          {/* Coordinates Panel - Only show when points are captured */}
+          {points.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Coordenadas GPS Capturadas</CardTitle>
+              </CardHeader>
+              <CardContent>
                 <div className="space-y-4">
                   <div className="max-h-96 overflow-y-auto space-y-2">
                     {points.map((point, index) => (
@@ -527,9 +521,9 @@ const DemarcateArea: React.FC = () => {
                     </div>
                   )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
