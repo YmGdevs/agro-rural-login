@@ -18,6 +18,10 @@ interface Parcela {
 interface Producer {
   id: string;
   nome_completo: string;
+  genero: string;
+  idade: number;
+  nuit: string;
+  created_at: string;
 }
 
 const ProducerParcelas: React.FC = () => {
@@ -40,7 +44,7 @@ const ProducerParcelas: React.FC = () => {
       // Load producer info
       const { data: producerData, error: producerError } = await supabase
         .from('producers')
-        .select('id, nome_completo')
+        .select('id, nome_completo, genero, idade, nuit, created_at')
         .eq('id', producerId)
         .single();
 
@@ -79,6 +83,14 @@ const ProducerParcelas: React.FC = () => {
     return `${distance.toFixed(0)} m`;
   };
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-PT', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -104,26 +116,56 @@ const ProducerParcelas: React.FC = () => {
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/producers")}
-              className="mr-3"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">Parcelas de {producer.nome_completo}</h1>
-              <p className="text-muted-foreground">{parcelas.length} parcela(s) registrada(s)</p>
-            </div>
-          </div>
-          <Button onClick={() => navigate("/demarcate-area")}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nova Parcela
+        <div className="flex items-center mb-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/producers")}
+            className="mr-3"
+          >
+            <ArrowLeft className="h-4 w-4" />
           </Button>
+          <div>
+            <h1 className="text-2xl font-bold">Perfil do Produtor</h1>
+          </div>
         </div>
+
+        {/* Producer Profile */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>{producer.nome_completo}</span>
+              <Button onClick={() => navigate("/demarcate-area")}>
+                <Plus className="mr-2 h-4 w-4" />
+                Nova Parcela
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Género</p>
+                <p className="font-medium capitalize">{producer.genero}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Idade</p>
+                <p className="font-medium">{producer.idade} anos</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">NUIT</p>
+                <p className="font-mono font-medium">{producer.nuit}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Data de Registo</p>
+                <p className="font-medium">{formatDate(producer.created_at)}</p>
+              </div>
+            </div>
+            <div className="border-t pt-4">
+              <p className="text-sm text-muted-foreground">Parcelas Registadas</p>
+              <p className="text-lg font-semibold">{parcelas.length} parcela{parcelas.length !== 1 ? 's' : ''}</p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Parcelas List */}
         {parcelas.length === 0 ? (
