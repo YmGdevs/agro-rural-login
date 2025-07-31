@@ -396,32 +396,6 @@ const DemarcateArea: React.FC = () => {
               <CardTitle>Configuração da Parcela</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* GPS Status */}
-              <div className="bg-muted p-4 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Satellite className="h-5 w-5" />
-                  <h4 className="font-medium">Status do GPS</h4>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">
-                    {gpsStatus === "available" && (
-                      <span className="text-green-600">✓ GPS Disponível</span>
-                    )}
-                    {gpsStatus === "unavailable" && (
-                      <span className="text-red-600">✗ GPS Indisponível</span>
-                    )}
-                    {gpsStatus === "unknown" && (
-                      <span className="text-yellow-600">? Verificando GPS...</span>
-                    )}
-                  </span>
-                  {currentGpsAccuracy && (
-                    <Badge variant="outline">
-                      <Target className="h-3 w-3 mr-1" />
-                      {currentGpsAccuracy.toFixed(1)}m
-                    </Badge>
-                  )}
-                </div>
-              </div>
 
               {/* Producer Selection */}
               <div className="space-y-2">
