@@ -364,27 +364,6 @@ const DemarcateArea: React.FC = () => {
               </div>
 
 
-              {/* Stats - Only show when points are captured */}
-              {points.length > 0 && (
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary">{points.length}</div>
-                    <div className="text-sm text-muted-foreground">Pontos</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary">
-                      {(area / 10000).toFixed(2)}
-                    </div>
-                    <div className="text-sm text-muted-foreground">Hectares</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary">
-                      {(perimeter / 1000).toFixed(2)}
-                    </div>
-                    <div className="text-sm text-muted-foreground">Km</div>
-                  </div>
-                </div>
-              )}
 
               {/* Action Buttons */}
               <div className="flex gap-2">
