@@ -135,7 +135,7 @@ const ProducerParcelas: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>{producer.nome_completo}</span>
-              <Button onClick={() => navigate("/demarcate-area")}>
+              <Button onClick={() => navigate(`/demarcate-area?producerId=${producer.id}`)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Nova Parcela
               </Button>
@@ -176,7 +176,7 @@ const ProducerParcelas: React.FC = () => {
               <p className="text-muted-foreground mb-4">
                 Este produtor ainda não tem parcelas demarcadas.
               </p>
-              <Button onClick={() => navigate("/demarcate-area")}>
+              <Button onClick={() => navigate(`/demarcate-area?producerId=${producer.id}`)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Demarcar Primeira Parcela
               </Button>

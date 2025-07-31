@@ -9,7 +9,7 @@ import { MapPin, Play, Square, RotateCcw, Save, Loader2, ArrowLeft } from "lucid
 import { Loader } from "@googlemaps/js-api-loader";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 interface GpsPoint {
   id: string;
@@ -28,6 +28,7 @@ type DemarcationMode = "manual" | "walking";
 
 const DemarcateArea: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<DemarcationMode>("manual");
   const [points, setPoints] = useState<GpsPoint[]>([]);
   const [isWalking, setIsWalking] = useState(false);
@@ -42,7 +43,13 @@ const DemarcateArea: React.FC = () => {
   useEffect(() => {
     initializeGoogleMaps();
     loadProducers();
-  }, []);
+    
+    // Auto-select producer if passed in URL
+    const producerIdFromUrl = searchParams.get('producerId');
+    if (producerIdFromUrl) {
+      setSelectedProducer(producerIdFromUrl);
+    }
+  }, [searchParams]);
 
   const loadProducers = async () => {
     try {
@@ -213,7 +220,14 @@ const DemarcateArea: React.FC = () => {
 
       toast.success("Parcela salva com sucesso!");
       
-      // Reset form
+      // Navigate back to producer profile if coming from there
+      const producerIdFromUrl = searchParams.get('producerId');
+      if (producerIdFromUrl) {
+        navigate(`/producer/${producerIdFromUrl}/parcelas`);
+        return;
+      }
+      
+      // Reset form if not coming from producer profile
       setPoints([]);
       setParcelaName("");
       setSelectedProducer("");
@@ -300,6 +314,11 @@ const DemarcateArea: React.FC = () => {
                   ))}
                 </SelectContent>
               </Select>
+              {searchParams.get('producerId') && (
+                <p className="text-sm text-muted-foreground">
+                  Produtor pré-selecionado do perfil
+                </p>
+              )}
             </div>
 
             {/* Plot Name */}
