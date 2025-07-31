@@ -1,6 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Users, 
   MapPin, 
@@ -15,12 +17,31 @@ import {
   User,
   Calendar,
   Filter,
-  Search
+  Search,
+  LogOut
 } from "lucide-react";
 
 const Dashboard = () => {
-  const userName = "João Silva"; // Mock user name
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Logout realizado",
+        description: "Até breve!",
+      });
+      navigate("/");
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao fazer logout",
+        variant: "destructive",
+      });
+    }
+  };
 
 
   const actionButtons = [
@@ -53,11 +74,19 @@ const Dashboard = () => {
             <Button variant="ghost" size="icon" className="rounded-full bg-gray-100">
               <Search className="h-5 w-5 text-gray-600" />
             </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="rounded-full bg-red-100 hover:bg-red-200"
+              onClick={handleSignOut}
+            >
+              <LogOut className="h-5 w-5 text-red-600" />
+            </Button>
           </div>
         </div>
         
         <div className="text-center mb-4">
-          <p className="text-gray-600">Olá, {userName}</p>
+          <p className="text-gray-600">Olá, {user?.email}</p>
         </div>
       </div>
 
