@@ -1,6 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Users, 
   MapPin, 
@@ -15,21 +17,42 @@ import {
   User,
   Calendar,
   Filter,
-  Search
+  Search,
+  LogOut
 } from "lucide-react";
 
 const Dashboard = () => {
-  const userName = "João Silva"; // Mock user name
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  console.log("Dashboard component rendering, user:", user);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Logout realizado",
+        description: "Até breve!",
+      });
+      navigate("/");
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao fazer logout",
+        variant: "destructive",
+      });
+    }
+  };
 
 
   const actionButtons = [
     { title: "Registar Produtor", icon: UserPlus, description: "Novo cadastro" },
+    { title: "Ver Produtores", icon: Users, description: "Lista completa" },
     { title: "Mapear Parcela", icon: Map, description: "Localização GPS" },
     { title: "Iniciar Visita", icon: PlayCircle, description: "Acompanhamento" },
     { title: "Ver Recursos", icon: BookOpen, description: "Materiais" },
     { title: "Relatórios", icon: BarChart3, description: "Estatísticas" },
-    { title: "Sincronizar", icon: RefreshCw, description: "Dados offline" },
   ];
 
   const navigationItems = [
@@ -53,11 +76,19 @@ const Dashboard = () => {
             <Button variant="ghost" size="icon" className="rounded-full bg-gray-100">
               <Search className="h-5 w-5 text-gray-600" />
             </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="rounded-full bg-red-100 hover:bg-red-200"
+              onClick={handleSignOut}
+            >
+              <LogOut className="h-5 w-5 text-red-600" />
+            </Button>
           </div>
         </div>
         
         <div className="text-center mb-4">
-          <p className="text-gray-600">Olá, {userName}</p>
+          <p className="text-gray-600">Olá, {user?.email}</p>
         </div>
       </div>
 
@@ -72,6 +103,8 @@ const Dashboard = () => {
               onClick={() => {
                 if (button.title === "Registar Produtor") {
                   navigate("/register-producer");
+                } else if (button.title === "Ver Produtores") {
+                  navigate("/producers");
                 } else if (button.title === "Mapear Parcela") {
                   navigate("/demarcate-area");
                 }

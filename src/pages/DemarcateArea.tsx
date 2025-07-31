@@ -1,23 +1,15 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MapPin, Play, Square, RotateCcw, Save, Loader2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { 
-  ArrowLeft, 
-  MapPin, 
-  Play, 
-  Square, 
-  Trash2, 
-  Save, 
-  Navigation,
-  Smartphone,
-  Circle,
-  Download,
-  List,
-  Eye
-} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Loader } from "@googlemaps/js-api-loader";
 
 interface GpsPoint {
   id: string;
@@ -27,73 +19,141 @@ interface GpsPoint {
   timestamp: Date;
 }
 
+interface Producer {
+  id: string;
+  nome_completo: string;
+}
+
 type DemarcationMode = "manual" | "walking";
 
-const DemarcateArea = () => {
+const DemarcateArea: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<DemarcationMode>("manual");
   const [points, setPoints] = useState<GpsPoint[]>([]);
   const [isWalking, setIsWalking] = useState(false);
-  const [currentPosition, setCurrentPosition] = useState<{ lat: number; lng: number } | null>(null);
-  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
-  const [area, setArea] = useState<number>(0);
-  const [showDetails, setShowDetails] = useState(false);
-  const walkingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [watchId, setWatchId] = useState<number | null>(null);
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [producers, setProducers] = useState<Producer[]>([]);
+  const [selectedProducer, setSelectedProducer] = useState<string>("");
+  const [parcelaName, setParcelaName] = useState<string>("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [googleMapsApiKey, setGoogleMapsApiKey] = useState<string>("");
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const markersRef = useRef<google.maps.Marker[]>([]);
+  const polygonRef = useRef<google.maps.Polygon | null>(null);
+  const loaderRef = useRef<Loader | null>(null);
+
+  useEffect(() => {
+    console.log("DemarcateArea: useEffect triggered");
+    // Load saved API key from localStorage
+    const savedApiKey = localStorage.getItem('googleMapsApiKey');
+    if (savedApiKey) {
+      setGoogleMapsApiKey(savedApiKey);
+    }
+
+    const initialize = async () => {
+      try {
+        await loadProducers();
+        
+        // Auto-select producer if passed in URL
+        const producerIdFromUrl = searchParams.get('producerId');
+        if (producerIdFromUrl) {
+          setSelectedProducer(producerIdFromUrl);
+        }
+        
+        // Set loading to false only after everything is successful
+        setIsLoading(false);
+        console.log("DemarcateArea: Initialization completed successfully");
+      } catch (error) {
+        console.error("Error during initialization:", error);
+        setIsLoading(false);
+        toast.error("Erro ao carregar página");
+      }
+    };
+    
+    initialize();
+  }, [searchParams]);
+
+  // Initialize map when API key is available
+  useEffect(() => {
+    if (googleMapsApiKey && !map) {
+      initializeGoogleMaps();
+    }
+  }, [googleMapsApiKey, map]);
+
+  const loadProducers = async (): Promise<void> => {
+    console.log("DemarcateArea: Loading producers");
+    try {
+      const { data, error } = await supabase
+        .from('producers')
+        .select('id, nome_completo')
+        .order('nome_completo');
+      
+      if (error) throw error;
+      setProducers(data || []);
+      console.log("DemarcateArea: Producers loaded successfully", data?.length);
+    } catch (error) {
+      console.error('Erro ao carregar produtores:', error);
+      toast.error('Erro ao carregar lista de produtores');
+      throw error; // Re-throw to be caught by the Promise.all
+    }
+  };
 
   // Calculate area using shoelace formula
   const calculateArea = (coordinates: GpsPoint[]) => {
     if (coordinates.length < 3) return 0;
     
     let area = 0;
-    const n = coordinates.length;
-    
-    for (let i = 0; i < n; i++) {
-      const j = (i + 1) % n;
+    for (let i = 0; i < coordinates.length; i++) {
+      const j = (i + 1) % coordinates.length;
       area += coordinates[i].lat * coordinates[j].lng;
       area -= coordinates[j].lat * coordinates[i].lng;
     }
     
     area = Math.abs(area) / 2;
     // Convert to square meters (approximate)
-    const areaInSquareMeters = area * 111320 * 111320 * Math.cos((coordinates[0].lat * Math.PI) / 180);
-    return areaInSquareMeters / 10000; // Convert to hectares
+    return area * 111320 * 111320 * Math.cos((coordinates[0].lat * Math.PI) / 180);
   };
 
-  // Update area when points change
-  useEffect(() => {
-    if (points.length >= 3) {
-      const calculatedArea = calculateArea(points);
-      setArea(calculatedArea);
-    } else {
-      setArea(0);
+  const calculatePerimeter = (coordinates: GpsPoint[]) => {
+    if (coordinates.length < 2) return 0;
+    
+    let perimeter = 0;
+    for (let i = 0; i < coordinates.length; i++) {
+      const j = (i + 1) % coordinates.length;
+      const R = 6371000; // Earth radius in meters
+      const dLat = (coordinates[j].lat - coordinates[i].lat) * Math.PI / 180;
+      const dLon = (coordinates[j].lng - coordinates[i].lng) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(coordinates[i].lat * Math.PI / 180) * Math.cos(coordinates[j].lat * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      perimeter += R * c;
     }
-  }, [points]);
+    return perimeter;
+  };
 
-  // Get current GPS position
   const getCurrentPosition = (): Promise<GeolocationPosition> => {
     return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
-        reject(new Error("Geolocalização não é suportada pelo browser"));
+        reject(new Error("Geolocalização não suportada"));
         return;
       }
 
-      navigator.geolocation.getCurrentPosition(
-        resolve,
-        reject,
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        }
-      );
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      });
     });
   };
 
-  // Add a point manually or automatically
-  const addPoint = async (lat?: number, lng?: number) => {
+  const addPoint = async (lat?: number, lng?: number): Promise<void> => {
     try {
       let position;
-      
       if (lat && lng) {
         position = { coords: { latitude: lat, longitude: lng, accuracy: 5 } };
       } else {
@@ -108,471 +168,526 @@ const DemarcateArea = () => {
         timestamp: new Date()
       };
 
-      // Check GPS accuracy
-      if (position.coords.accuracy && position.coords.accuracy > 10) {
-        toast.warning(`Precisão GPS baixa: ${position.coords.accuracy.toFixed(1)}m`);
-      }
-
       setPoints(prev => [...prev, newPoint]);
-      setGpsAccuracy(position.coords.accuracy || null);
-      toast.success(`Ponto ${points.length + 1} capturado`);
+      updateMapDisplay([...points, newPoint]);
+      toast.success(`Ponto ${points.length + 1} adicionado`);
     } catch (error) {
-      toast.error("Erro ao capturar localização GPS");
+      toast.error("Erro ao capturar localização");
       console.error(error);
     }
   };
 
-  // Start/stop walking mode
-  const toggleWalkingMode = () => {
+  const toggleWalkingMode = (): void => {
     if (isWalking) {
-      // Stop walking
-      if (walkingIntervalRef.current) {
-        clearInterval(walkingIntervalRef.current);
-        walkingIntervalRef.current = null;
+      if (watchId) {
+        navigator.geolocation.clearWatch(watchId);
+        setWatchId(null);
       }
       setIsWalking(false);
       toast.info("Modo caminhada parado");
     } else {
-      // Start walking
+      const id = navigator.geolocation.watchPosition(
+        (position) => {
+          const newPoint: GpsPoint = {
+            id: Date.now().toString(),
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            accuracy: position.coords.accuracy || 0,
+            timestamp: new Date()
+          };
+          setPoints(prev => {
+            const newPoints = [...prev, newPoint];
+            updateMapDisplay(newPoints);
+            return newPoints;
+          });
+        },
+        (error) => console.error(error),
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+      );
+      setWatchId(id);
       setIsWalking(true);
-      toast.info("Modo caminhada iniciado - pontos serão capturados automaticamente");
-      
-      walkingIntervalRef.current = setInterval(() => {
-        addPoint();
-      }, 5000); // Capture point every 5 seconds
+      toast.success("Modo caminhada iniciado");
     }
   };
 
-  // Remove last point
-  const removeLastPoint = () => {
+  const removeLastPoint = (): void => {
     if (points.length > 0) {
-      setPoints(prev => prev.slice(0, -1));
+      const newPoints = points.slice(0, -1);
+      setPoints(newPoints);
+      updateMapDisplay(newPoints);
       toast.info("Último ponto removido");
     }
   };
 
-  // Clear all points
-  const clearAllPoints = () => {
+  const clearAllPoints = (): void => {
     setPoints([]);
-    setArea(0);
-    toast.info("Todos os pontos removidos");
+    updateMapDisplay([]);
+    toast.info("Todos os pontos limpos");
   };
 
-  // Save demarcation
-  const saveDemarcation = () => {
+  const saveDemarcation = async () => {
+    if (!selectedProducer) {
+      toast.error("Selecione um produtor antes de salvar");
+      return;
+    }
+
+    if (!parcelaName.trim()) {
+      toast.error("Digite um nome para a parcela");
+      return;
+    }
+
     if (points.length < 3) {
-      toast.error("Mínimo de 3 pontos necessários para formar uma área");
+      toast.error("É necessário pelo menos 3 pontos para definir uma área");
       return;
     }
 
-    // Here you would save to Supabase
-    const demarcationData = {
-      points,
-      area,
-      perimeter: calculatePerimeter(points),
-      createdAt: new Date(),
-      producerId: "temp-id" // This would come from context/props
-    };
-
-    console.log("Saving demarcation:", demarcationData);
-    toast.success(`Área de ${area.toFixed(2)} hectares salva com sucesso!`);
-    navigate("/dashboard");
-  };
-
-  const calculatePerimeter = (coordinates: GpsPoint[]) => {
-    if (coordinates.length < 2) return 0;
-    
-    let perimeter = 0;
-    for (let i = 0; i < coordinates.length; i++) {
-      const j = (i + 1) % coordinates.length;
-      const distance = getDistanceFromLatLonInKm(
-        coordinates[i].lat, 
-        coordinates[i].lng, 
-        coordinates[j].lat, 
-        coordinates[j].lng
-      );
-      perimeter += distance;
-    }
-    return perimeter * 1000; // Convert to meters
-  };
-
-  const getDistanceFromLatLonInKm = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371; // Radius of the earth in km
-    const dLat = deg2rad(lat2 - lat1);
-    const dLon = deg2rad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const d = R * c; // Distance in km
-    return d;
-  };
-
-  const deg2rad = (deg: number) => {
-    return deg * (Math.PI / 180);
-  };
-
-  // Export coordinates to various formats
-  const exportCoordinates = (format: 'csv' | 'gpx' | 'kml') => {
-    if (points.length === 0) {
-      toast.error("Nenhum ponto para exportar");
-      return;
-    }
-
-    let content = '';
-    let filename = '';
-    let mimeType = '';
-
-    switch (format) {
-      case 'csv':
-        content = 'Ponto,Latitude,Longitude,Precisão,Timestamp\n' +
-          points.map((point, index) => 
-            `${index + 1},${point.lat},${point.lng},${point.accuracy},${point.timestamp.toISOString()}`
-          ).join('\n');
-        filename = `demarcacao_${new Date().toISOString().split('T')[0]}.csv`;
-        mimeType = 'text/csv';
-        break;
+    setIsSaving(true);
+    try {
+      const area = calculateArea(points);
+      const perimeter = calculatePerimeter(points);
       
-      case 'gpx':
-        content = `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="Sistema de Demarcação">
-  <trk>
-    <name>Área Demarcada</name>
-    <trkseg>
-${points.map(point => `      <trkpt lat="${point.lat}" lon="${point.lng}">
-        <time>${point.timestamp.toISOString()}</time>
-      </trkpt>`).join('\n')}
-    </trkseg>
-  </trk>
-</gpx>`;
-        filename = `demarcacao_${new Date().toISOString().split('T')[0]}.gpx`;
-        mimeType = 'application/gpx+xml';
-        break;
-        
-      case 'kml':
-        content = `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <name>Área Demarcada</name>
-    <Placemark>
-      <name>Polígono da Área</name>
-      <Polygon>
-        <outerBoundaryIs>
-          <LinearRing>
-            <coordinates>
-${points.map(point => `              ${point.lng},${point.lat},0`).join('\n')}
-              ${points[0]?.lng},${points[0]?.lat},0
-            </coordinates>
-          </LinearRing>
-        </outerBoundaryIs>
-      </Polygon>
-    </Placemark>
-  </Document>
-</kml>`;
-        filename = `demarcacao_${new Date().toISOString().split('T')[0]}.kml`;
-        mimeType = 'application/vnd.google-earth.kml+xml';
-        break;
-    }
+      const { error } = await supabase
+        .from('parcelas')
+        .insert({
+          nome: parcelaName,
+          produtor_id: selectedProducer,
+          coordenadas: JSON.stringify(points),
+          area_metros_quadrados: area,
+          perimetro_metros: perimeter
+        });
 
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-    
-    toast.success(`Arquivo ${format.toUpperCase()} exportado com sucesso!`);
+      if (error) throw error;
+
+      toast.success("Parcela salva com sucesso!");
+      
+      // Navigate back to producer profile if coming from there
+      const producerIdFromUrl = searchParams.get('producerId');
+      if (producerIdFromUrl) {
+        navigate(`/producer/${producerIdFromUrl}/parcelas`);
+        return;
+      }
+      
+      // Reset form if not coming from producer profile
+      setPoints([]);
+      setParcelaName("");
+      setSelectedProducer("");
+      updateMapDisplay([]);
+      
+    } catch (error) {
+      console.error('Erro ao salvar parcela:', error);
+      toast.error('Erro ao salvar parcela');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  // Get user's current location on mount
-  useEffect(() => {
-    getCurrentPosition()
-      .then(position => {
-        setCurrentPosition({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
+  const cleanupMapScript = () => {
+    // Remove existing Google Maps scripts to allow fresh load
+    const existingScripts = document.querySelectorAll('script[src*="maps.googleapis.com"]');
+    existingScripts.forEach(script => script.remove());
+    
+    // Clear the global google object
+    if (window.google) {
+      delete window.google;
+    }
+    
+    // Reset loader reference
+    loaderRef.current = null;
+    setIsMapLoaded(false);
+  };
+
+  const initializeGoogleMaps = async (): Promise<void> => {
+    console.log("DemarcateArea: Initializing Google Maps");
+    try {
+      if (!mapContainer.current) {
+        console.log("DemarcateArea: No map container found");
+        throw new Error("Map container not available");
+      }
+
+      if (!googleMapsApiKey) {
+        throw new Error("Google Maps API key not provided");
+      }
+
+      // If we already have a loader with different options, clean up first
+      if (loaderRef.current) {
+        cleanupMapScript();
+      }
+
+      // Create new loader only if we don't have one or it's been cleaned up
+      if (!loaderRef.current) {
+        loaderRef.current = new Loader({
+          apiKey: googleMapsApiKey,
+          version: "weekly",
+          libraries: ["places"],
+          id: `google-maps-${Date.now()}` // Unique ID to avoid conflicts
         });
-        setGpsAccuracy(position.coords.accuracy || null);
-      })
-      .catch(error => {
-        console.error("Error getting initial position:", error);
-        // Default to Maputo, Mozambique
-        setCurrentPosition({ lat: -25.9692, lng: 32.5732 });
+      }
+
+      await loaderRef.current.load();
+      console.log("DemarcateArea: Google Maps loaded");
+      setIsMapLoaded(true);
+
+      // Get user's current location
+      console.log("DemarcateArea: Getting user location");
+      const position = await getCurrentPosition();
+      const center = { lat: position.coords.latitude, lng: position.coords.longitude };
+      console.log("DemarcateArea: User location obtained", center);
+
+      // Initialize map
+      const mapInstance = new google.maps.Map(mapContainer.current, {
+        center: center,
+        zoom: 18,
+        mapTypeId: google.maps.MapTypeId.SATELLITE,
+        mapTypeControl: true,
+        streetViewControl: false,
+        fullscreenControl: true,
+        zoomControl: true
       });
 
-    return () => {
-      if (walkingIntervalRef.current) {
-        clearInterval(walkingIntervalRef.current);
-      }
-    };
-  }, []);
+      // Add click handler for manual point addition
+      mapInstance.addListener('click', (e: google.maps.MapMouseEvent) => {
+        if (mode === 'manual' && selectedProducer && e.latLng) {
+          addPoint(e.latLng.lat(), e.latLng.lng());
+        }
+      });
 
-  if (!currentPosition) {
+      setMap(mapInstance);
+      console.log("DemarcateArea: Google Maps initialized successfully");
+      toast.success("Mapa carregado com sucesso");
+    } catch (error) {
+      console.error("DemarcateArea: Error initializing Google Maps:", error);
+      toast.error("Erro ao carregar mapa: " + error.message);
+      setIsMapLoaded(false);
+    }
+  };
+
+  const updateMapDisplay = (currentPoints: GpsPoint[] = points): void => {
+    if (!map) return;
+
+    // Clear existing markers
+    markersRef.current.forEach(marker => marker.setMap(null));
+    markersRef.current = [];
+
+    // Remove existing polygon
+    if (polygonRef.current) {
+      polygonRef.current.setMap(null);
+      polygonRef.current = null;
+    }
+
+    // Add markers for each point
+    currentPoints.forEach((point, index) => {
+      const marker = new google.maps.Marker({
+        position: { lat: point.lat, lng: point.lng },
+        map: map,
+        title: `Ponto ${index + 1}`,
+        label: {
+          text: (index + 1).toString(),
+          color: 'white',
+          fontWeight: 'bold'
+        },
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          fillColor: '#10b981',
+          fillOpacity: 1,
+          strokeColor: 'white',
+          strokeWeight: 2,
+          scale: 10
+        }
+      });
+
+      markersRef.current.push(marker);
+    });
+
+    // Create polygon if we have at least 3 points
+    if (currentPoints.length >= 3) {
+      const coordinates = currentPoints.map(point => ({ lat: point.lat, lng: point.lng }));
+
+      const polygon = new google.maps.Polygon({
+        paths: coordinates,
+        strokeColor: '#10b981',
+        strokeOpacity: 1.0,
+        strokeWeight: 2,
+        fillColor: '#10b981',
+        fillOpacity: 0.3
+      });
+
+      polygon.setMap(map);
+      polygonRef.current = polygon;
+    }
+
+    // Fit map to points if we have any
+    if (currentPoints.length > 0) {
+      const bounds = new google.maps.LatLngBounds();
+      currentPoints.forEach(point => {
+        bounds.extend({ lat: point.lat, lng: point.lng });
+      });
+      map.fitBounds(bounds);
+      
+      // Ensure minimum zoom level
+      const listener = google.maps.event.addListener(map, "idle", () => {
+        if (map.getZoom()! > 20) map.setZoom(20);
+        google.maps.event.removeListener(listener);
+      });
+    }
+  };
+
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-green-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Circle className="h-8 w-8 animate-spin mx-auto mb-4 text-green-600" />
-          <p className="text-gray-600">A obter localização GPS...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p>Carregando...</p>
         </div>
       </div>
     );
   }
 
+  const area = calculateArea(points);
+  const perimeter = calculatePerimeter(points);
+
   return (
-    <div className="min-h-screen bg-green-50">
-      {/* Header */}
-      <div className="bg-white px-6 pt-12 pb-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/dashboard")}
-              className="rounded-full bg-gray-100"
-            >
-              <ArrowLeft className="h-5 w-5 text-gray-600" />
-            </Button>
-            <h1 className="text-2xl font-bold text-gray-900">Demarcar Área</h1>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Badge variant={gpsAccuracy && gpsAccuracy < 5 ? "default" : "secondary"}>
-              <Navigation className="h-3 w-3 mr-1" />
-              GPS: {gpsAccuracy ? `${gpsAccuracy.toFixed(1)}m` : "N/A"}
-            </Badge>
-          </div>
+    <div className="min-h-screen bg-background p-4">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex items-center mb-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/dashboard")}
+            className="mr-3"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-2xl font-bold">Demarcar Parcela</h1>
         </div>
 
-
-        {/* Mode Toggle */}
-        <div className="flex space-x-2 mb-4">
-          <Button
-            variant={mode === "manual" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setMode("manual")}
-            className="flex-1"
-          >
-            <Smartphone className="h-4 w-4 mr-2" />
-            Manual
-          </Button>
-          <Button
-            variant={mode === "walking" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setMode("walking")}
-            className="flex-1"
-          >
-            <MapPin className="h-4 w-4 mr-2" />
-            Caminhada
-          </Button>
-        </div>
-      </div>
-
-      <div className="px-6 pb-6">
-        {/* Coordinates List */}
-        <Card className="bg-white rounded-2xl shadow-sm border-0 mb-6">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold flex items-center">
-                <List className="h-5 w-5 mr-2 text-green-600" />
-                Pontos Capturados
-              </CardTitle>
-              {points.length > 0 && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setShowDetails(!showDetails)}
-                >
-                  <Eye className="h-4 w-4 mr-1" />
-                  {showDetails ? "Ocultar" : "Detalhes"}
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            {points.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <MapPin className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                <p>Nenhum ponto capturado ainda</p>
-                <p className="text-sm">Use os botões abaixo para começar</p>
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {points.map((point, index) => (
-                  <div key={point.id} className="bg-gray-50 rounded-lg p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="bg-green-100 rounded-full p-1.5">
-                          <MapPin className="h-4 w-4 text-green-600" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900">
-                            Ponto {index + 1}
-                          </div>
-                          {showDetails && (
-                            <div className="text-sm text-gray-600 space-y-1 mt-1">
-                              <div>Lat: {point.lat.toFixed(6)}</div>
-                              <div>Lng: {point.lng.toFixed(6)}</div>
-                              <div>Precisão: {point.accuracy.toFixed(1)}m</div>
-                              <div>Tempo: {point.timestamp.toLocaleTimeString()}</div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <Badge 
-                        variant={point.accuracy < 5 ? "default" : point.accuracy < 10 ? "secondary" : "destructive"}
-                        className="text-xs"
-                      >
-                        ±{point.accuracy.toFixed(1)}m
-                      </Badge>
-                    </div>
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Configuration Panel */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Configuração da Parcela</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Google Maps API Key */}
+              {!googleMapsApiKey && (
+                <div className="space-y-2">
+                  <Label htmlFor="api-key">Chave da API do Google Maps</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="api-key"
+                      type="password"
+                      placeholder="Cole aqui sua chave da API do Google Maps"
+                      value={googleMapsApiKey}
+                      onChange={(e) => setGoogleMapsApiKey(e.target.value)}
+                    />
+                    <Button
+                      onClick={() => {
+                        if (googleMapsApiKey) {
+                          localStorage.setItem('googleMapsApiKey', googleMapsApiKey);
+                          toast.success("Chave da API salva!");
+                        }
+                      }}
+                      disabled={!googleMapsApiKey}
+                    >
+                      Salvar
+                    </Button>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <Card className="bg-white rounded-xl shadow-sm border-0">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-green-600">{points.length}</div>
-              <div className="text-xs text-gray-500">Pontos</div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-white rounded-xl shadow-sm border-0">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {area.toFixed(2)}
-              </div>
-              <div className="text-xs text-gray-500">Hectares</div>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-white rounded-xl shadow-sm border-0">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {points.length >= 2 ? (calculatePerimeter(points) / 1000).toFixed(2) : "0.00"}
-              </div>
-              <div className="text-xs text-gray-500">Km</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="space-y-3">
-          {mode === "manual" ? (
-            <Button
-              onClick={() => addPoint()}
-              className="w-full bg-green-600 hover:bg-green-700 text-white"
-              size="lg"
-            >
-              <MapPin className="h-5 w-5 mr-2" />
-              Marcar Ponto Atual
-            </Button>
-          ) : (
-            <Button
-              onClick={toggleWalkingMode}
-              className={`w-full ${isWalking ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} text-white`}
-              size="lg"
-            >
-              {isWalking ? (
-                <>
-                  <Square className="h-5 w-5 mr-2" />
-                  Parar Caminhada
-                </>
-              ) : (
-                <>
-                  <Play className="h-5 w-5 mr-2" />
-                  Iniciar Caminhada
-                </>
+                  <p className="text-sm text-muted-foreground">
+                    Obtenha sua chave em: <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-primary underline">Google Cloud Console</a>
+                  </p>
+                </div>
               )}
-            </Button>
-          )}
 
-          <div className="flex space-x-3">
-            <Button
-              variant="outline"
-              onClick={removeLastPoint}
-              className="flex-1"
-              disabled={points.length === 0}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Remover Último
-            </Button>
-            
-            <Button
-              variant="outline"
-              onClick={clearAllPoints}
-              className="flex-1"
-              disabled={points.length === 0}
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Limpar Tudo
-            </Button>
-          </div>
+              {googleMapsApiKey && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Chave da API configurada</Label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        cleanupMapScript();
+                        setGoogleMapsApiKey("");
+                        localStorage.removeItem('googleMapsApiKey');
+                        setMap(null);
+                        setIsMapLoaded(false);
+                        toast.info("Chave da API removida");
+                      }}
+                    >
+                      Alterar
+                    </Button>
+                  </div>
+                  <p className="text-sm text-green-600">✓ Mapa do Google ativo</p>
+                </div>
+              )}
 
-          {/* Export Options */}
-          {points.length > 0 && (
-            <div className="flex space-x-2">
-              <Button
-                variant="outline"
-                onClick={() => exportCoordinates('csv')}
-                className="flex-1 text-xs"
-                size="sm"
-              >
-                <Download className="h-3 w-3 mr-1" />
-                CSV
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => exportCoordinates('gpx')}
-                className="flex-1 text-xs"
-                size="sm"
-              >
-                <Download className="h-3 w-3 mr-1" />
-                GPX
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => exportCoordinates('kml')}
-                className="flex-1 text-xs"
-                size="sm"
-              >
-                <Download className="h-3 w-3 mr-1" />
-                KML
-              </Button>
-            </div>
-          )}
+              {/* Producer Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="producer">Selecionar Produtor</Label>
+                <Select value={selectedProducer} onValueChange={setSelectedProducer}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Escolha um produtor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {producers.map((producer) => (
+                      <SelectItem key={producer.id} value={producer.id}>
+                        {producer.nome_completo}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {searchParams.get('producerId') && (
+                  <p className="text-sm text-muted-foreground">
+                    Produtor pré-selecionado do perfil
+                  </p>
+                )}
+              </div>
 
-          <Button
-            onClick={saveDemarcation}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-            size="lg"
-            disabled={points.length < 3}
-          >
-            <Save className="h-5 w-5 mr-2" />
-            Salvar Demarcação
-          </Button>
+              {/* Plot Name */}
+              <div className="space-y-2">
+                <Label htmlFor="parcela-name">Nome da Parcela</Label>
+                <Input
+                  id="parcela-name"
+                  value={parcelaName}
+                  onChange={(e) => setParcelaName(e.target.value)}
+                  placeholder="Digite o nome da parcela"
+                />
+              </div>
+
+              {/* Mode Selection */}
+              <div className="flex gap-2">
+                <Button
+                  variant={mode === "manual" ? "default" : "outline"}
+                  onClick={() => setMode("manual")}
+                  className="flex-1"
+                  disabled={!selectedProducer || !googleMapsApiKey}
+                >
+                  <MapPin className="mr-2 h-4 w-4" />
+                  Manual
+                </Button>
+                <Button
+                  variant={mode === "walking" ? "default" : "outline"}
+                  onClick={() => setMode("walking")}
+                  className="flex-1"
+                  disabled={!selectedProducer || !googleMapsApiKey}
+                >
+                  <Play className="mr-2 h-4 w-4" />
+                  Caminhada
+                </Button>
+              </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary">{points.length}</div>
+                  <div className="text-sm text-muted-foreground">Pontos</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary">
+                    {(area / 10000).toFixed(2)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Hectares</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-primary">
+                    {(perimeter / 1000).toFixed(2)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Km</div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                <Button
+                  onClick={mode === "manual" ? () => addPoint() : toggleWalkingMode}
+                  disabled={!selectedProducer || !googleMapsApiKey}
+                  className="flex-1"
+                >
+                  {mode === "manual" ? (
+                    <>
+                      <MapPin className="mr-2 h-4 w-4" />
+                      Adicionar Ponto
+                    </>
+                  ) : isWalking ? (
+                    <>
+                      <Square className="mr-2 h-4 w-4" />
+                      Parar
+                    </>
+                  ) : (
+                    <>
+                      <Play className="mr-2 h-4 w-4" />
+                      Iniciar
+                    </>
+                  )}
+                </Button>
+                
+                <Button variant="outline" onClick={removeLastPoint} disabled={points.length === 0}>
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Desfazer
+                </Button>
+              </div>
+
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={clearAllPoints} disabled={points.length === 0}>
+                  Limpar Tudo
+                </Button>
+                <Button 
+                  onClick={saveDemarcation} 
+                  disabled={points.length < 3 || !selectedProducer || !parcelaName.trim() || isSaving}
+                  className="flex-1"
+                >
+                  {isSaving ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="mr-2 h-4 w-4" />
+                  )}
+                  Salvar Parcela
+                </Button>
+              </div>
+
+              {/* Points List */}
+              {points.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Pontos Capturados</Label>
+                  <div className="max-h-32 overflow-y-auto space-y-1">
+                    {points.map((point, index) => (
+                      <div key={point.id} className="flex justify-between items-center text-sm bg-muted p-2 rounded">
+                        <span>Ponto {index + 1}</span>
+                        <Badge variant="secondary">
+                          {point.accuracy.toFixed(1)}m
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Instructions */}
+              <div className="bg-muted p-4 rounded-lg">
+                <h4 className="font-medium mb-2">Instruções:</h4>
+                <ul className="text-sm space-y-1 text-muted-foreground">
+                  <li>• Selecione primeiro um produtor e dê um nome à parcela</li>
+                  <li>• Use modo Manual para adicionar pontos clicando no mapa</li>
+                  <li>• Use modo Caminhada para capturar pontos automaticamente</li>
+                  <li>• São necessários pelo menos 3 pontos para formar uma área</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Map Panel */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Mapa Interativo - Google Maps</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div 
+                ref={mapContainer} 
+                className="w-full h-[600px] rounded-lg"
+                style={{ minHeight: '600px' }}
+              />
+            </CardContent>
+          </Card>
         </div>
-
-        {/* Instructions */}
-        <Card className="bg-blue-50 rounded-xl border-blue-200 mt-6">
-          <CardContent className="p-4">
-            <h3 className="font-semibold text-blue-900 mb-2">Instruções:</h3>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>• <strong>Manual:</strong> Use "Marcar Ponto Atual" para capturar sua posição</li>
-              <li>• <strong>Caminhada:</strong> Pontos capturados automaticamente a cada 5 segundos</li>
-              <li>• Mínimo de 3 pontos para formar uma área</li>
-              <li>• Precisão GPS ideal: menor que 5 metros</li>
-              <li>• Exporte dados em CSV, GPX ou KML quando necessário</li>
-              <li>• Funciona completamente offline após carregamento inicial</li>
-            </ul>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
