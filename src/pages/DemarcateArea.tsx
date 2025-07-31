@@ -327,8 +327,8 @@ const DemarcateArea: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background p-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="grid lg:grid-cols-2 gap-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="space-y-6">
           {/* Configuration Panel */}
           <Card>
             <CardHeader className="flex flex-row items-center space-y-0 pb-4">
