@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      parcelas: {
+        Row: {
+          area_metros_quadrados: number | null
+          coordenadas: Json
+          created_at: string
+          id: string
+          nome: string
+          perimetro_metros: number | null
+          produtor_id: string
+          updated_at: string
+        }
+        Insert: {
+          area_metros_quadrados?: number | null
+          coordenadas: Json
+          created_at?: string
+          id?: string
+          nome: string
+          perimetro_metros?: number | null
+          produtor_id: string
+          updated_at?: string
+        }
+        Update: {
+          area_metros_quadrados?: number | null
+          coordenadas?: Json
+          created_at?: string
+          id?: string
+          nome?: string
+          perimetro_metros?: number | null
+          produtor_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parcelas_produtor_id_fkey"
+            columns: ["produtor_id"]
+            isOneToOne: false
+            referencedRelation: "producers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       producers: {
         Row: {
           created_at: string
