@@ -45,17 +45,35 @@ const DemarcateArea: React.FC = () => {
   const polygonRef = useRef<any>(null);
 
   useEffect(() => {
-    initializeMapbox();
-    loadProducers();
+    console.log("DemarcateArea: useEffect triggered");
+    const initialize = async () => {
+      try {
+        await Promise.all([
+          initializeMapbox(),
+          loadProducers()
+        ]);
+        
+        // Auto-select producer if passed in URL
+        const producerIdFromUrl = searchParams.get('producerId');
+        if (producerIdFromUrl) {
+          setSelectedProducer(producerIdFromUrl);
+        }
+        
+        // Set loading to false only after everything is successful
+        setIsLoading(false);
+        console.log("DemarcateArea: Initialization completed successfully");
+      } catch (error) {
+        console.error("Error during initialization:", error);
+        setIsLoading(false);
+        toast.error("Erro ao carregar página");
+      }
+    };
     
-    // Auto-select producer if passed in URL
-    const producerIdFromUrl = searchParams.get('producerId');
-    if (producerIdFromUrl) {
-      setSelectedProducer(producerIdFromUrl);
-    }
+    initialize();
   }, [searchParams]);
 
-  const loadProducers = async () => {
+  const loadProducers = async (): Promise<void> => {
+    console.log("DemarcateArea: Loading producers");
     try {
       const { data, error } = await supabase
         .from('producers')
@@ -64,9 +82,11 @@ const DemarcateArea: React.FC = () => {
       
       if (error) throw error;
       setProducers(data || []);
+      console.log("DemarcateArea: Producers loaded successfully", data?.length);
     } catch (error) {
       console.error('Erro ao carregar produtores:', error);
       toast.error('Erro ao carregar lista de produtores');
+      throw error; // Re-throw to be caught by the Promise.all
     }
   };
 
@@ -250,15 +270,22 @@ const DemarcateArea: React.FC = () => {
   };
 
   const initializeMapbox = async (): Promise<void> => {
+    console.log("DemarcateArea: Initializing Mapbox");
     try {
-      if (!mapContainer.current) return;
+      if (!mapContainer.current) {
+        console.log("DemarcateArea: No map container found");
+        throw new Error("Map container not available");
+      }
 
       // Set Mapbox access token
       mapboxgl.accessToken = 'KLV3F4L5RqU1UdgO';
+      console.log("DemarcateArea: Mapbox token set");
 
       // Get user's current location
+      console.log("DemarcateArea: Getting user location");
       const position = await getCurrentPosition();
       const center: [number, number] = [position.coords.longitude, position.coords.latitude];
+      console.log("DemarcateArea: User location obtained", center);
 
       // Initialize map
       const mapInstance = new mapboxgl.Map({
@@ -279,12 +306,12 @@ const DemarcateArea: React.FC = () => {
       });
 
       setMap(mapInstance);
-      setIsLoading(false);
+      console.log("DemarcateArea: Mapbox initialized successfully");
       toast.success("Mapa carregado com sucesso");
     } catch (error) {
-      console.error("Erro ao inicializar mapa:", error);
-      setIsLoading(false);
+      console.error("DemarcateArea: Error initializing mapbox:", error);
       toast.error("Erro ao carregar mapa");
+      throw error; // Re-throw to be caught by the Promise.all
     }
   };
 
