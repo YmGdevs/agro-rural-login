@@ -31,6 +31,7 @@ type DemarcationMode = "manual" | "walking";
 declare global {
   interface Window {
     google: any;
+    currentPolyline?: any;
   }
 }
 
@@ -310,11 +311,29 @@ const DemarcateArea = () => {
 
     setMarkers(newMarkers);
 
-    // Update polygon
+    // Clear existing polyline and polygon
+    if (window.currentPolyline) {
+      window.currentPolyline.setMap(null);
+    }
     if (polygon) {
       polygon.setMap(null);
     }
 
+    // Draw line connecting all points (polyline)
+    if (points.length >= 2) {
+      const polyline = new window.google.maps.Polyline({
+        path: points.map(p => ({ lat: p.lat, lng: p.lng })),
+        geodesic: true,
+        strokeColor: "#059669",
+        strokeOpacity: 1.0,
+        strokeWeight: 3,
+      });
+
+      polyline.setMap(googleMap);
+      window.currentPolyline = polyline;
+    }
+
+    // Draw filled area (polygon) when we have at least 3 points
     if (points.length >= 3) {
       const newPolygon = new window.google.maps.Polygon({
         paths: points.map(p => ({ lat: p.lat, lng: p.lng })),
