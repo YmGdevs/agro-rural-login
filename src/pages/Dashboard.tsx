@@ -20,11 +20,6 @@ import {
 const Dashboard = () => {
   const userName = "João Silva"; // Mock user name
 
-  const summaryData = [
-    { title: "Produtores", value: "127", icon: Users },
-    { title: "Parcelas", value: "89", icon: MapPin },
-    { title: "Visitas", value: "45", icon: CheckCircle },
-  ];
 
   const actionButtons = [
     { title: "Registar Produtor", icon: UserPlus, description: "Novo cadastro" },
@@ -38,7 +33,7 @@ const Dashboard = () => {
   const navigationItems = [
     { title: "Início", icon: Home, active: true },
     { title: "Produtores", icon: Users, active: false },
-    { title: "Visitas", icon: Calendar, active: false },
+    { title: "Métricas", icon: BarChart3, active: false },
     { title: "Recursos", icon: BookOpen, active: false },
     { title: "Perfil", icon: User, active: false },
   ];
@@ -65,23 +60,9 @@ const Dashboard = () => {
       </div>
 
       <div className="px-6 pb-24">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          {summaryData.map((item, index) => (
-            <Card key={index} className="bg-white rounded-2xl shadow-sm border-0">
-              <CardContent className="p-4 text-center">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <item.icon className="h-6 w-6 text-green-600" />
-                </div>
-                <p className="text-2xl font-bold text-gray-900 mb-1">{item.value}</p>
-                <p className="text-xs text-gray-500">{item.title}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
 
         {/* Action Buttons Grid */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 mt-6">
           {actionButtons.map((button, index) => (
             <Card key={index} className="bg-white rounded-2xl shadow-sm border-0 overflow-hidden">
               <CardContent className="p-6">
