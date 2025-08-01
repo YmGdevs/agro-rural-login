@@ -122,9 +122,9 @@ const Auth = () => {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <img 
-              src="/src/assets/iaom-logo.png" 
+              src="/lovable-uploads/01a960d6-3004-4c5d-a341-f88cb9a5c5d5.png" 
               alt="IAOM - Instituto do Algodão e Oleaginosas de Moçambique" 
-              className="h-16 w-auto"
+              className="h-20 w-auto"
             />
           </div>
           <CardDescription>Sistema de Gestão Agrícola</CardDescription>
