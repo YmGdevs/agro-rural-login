@@ -361,22 +361,26 @@ export default function AgrodellerDashboard() {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Dashboard Agrodealer</h1>
               <p className="text-gray-600">Gerencie o resgate de vouchers aprovados</p>
+              {!isNativePlatform && (
+                <p className="text-amber-600 text-sm mt-1">
+                  📱 Scanner QR funciona apenas no app móvel. Use "Código Manual" no navegador.
+                </p>
+              )}
             </div>
             <div className="flex gap-2">
-              {isNativePlatform && (
-                <Button 
-                  onClick={handleQRScan} 
-                  disabled={isScanning}
-                  className="flex items-center gap-2"
-                  variant="default"
-                >
-                  <Camera className="h-4 w-4" />
-                  {isScanning ? "Escaneando..." : "Escanear QR"}
-                </Button>
-              )}
+              <Button 
+                onClick={handleQRScan} 
+                disabled={isScanning}
+                className="flex items-center gap-2"
+                variant={isNativePlatform ? "default" : "secondary"}
+                title={isNativePlatform ? "Escanear QR Code" : "Scanner disponível apenas no app móvel"}
+              >
+                <Camera className="h-4 w-4" />
+                {isScanning ? "Escaneando..." : isNativePlatform ? "Escanear QR" : "QR (Mobile)"}
+              </Button>
               <Button onClick={() => setRedeemDialogOpen(true)} className="flex items-center gap-2">
                 <ScanLine className="h-4 w-4" />
-                Resgatar por Código
+                Código Manual
               </Button>
             </div>
           </div>

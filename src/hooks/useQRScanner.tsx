@@ -8,10 +8,14 @@ export function useQRScanner() {
   const { toast } = useToast();
 
   const checkPermissions = async () => {
+    console.log('Checking permissions...');
+    console.log('Is native platform:', Capacitor.isNativePlatform());
+    
     if (!Capacitor.isNativePlatform()) {
+      console.log('Not a native platform, showing warning');
       toast({
-        title: "Scanner não disponível",
-        description: "O scanner de QR code está disponível apenas no aplicativo móvel.",
+        title: "Scanner apenas em mobile",
+        description: "O scanner de QR code funciona apenas no aplicativo móvel. Use o campo de código manual.",
         variant: "destructive",
       });
       return false;
