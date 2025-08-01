@@ -35,14 +35,11 @@ const Dashboard = () => {
         <main className="flex-1">
           {/* Header */}
           <div className="bg-white px-6 py-4 border-b border-gray-100">
-            <div className="flex items-center justify-center">
+            <div className="flex items-center">
               <SidebarTrigger className="mr-4" />
-              <h1 className="text-2xl font-bold text-gray-900 flex-1 text-center">Dashboard</h1>
-              <div className="w-10"></div> {/* Spacer for centering */}
-            </div>
-            
-            <div className="text-center mt-4">
-              <p className="text-gray-600">Olá, {user?.email}</p>
+              <div className="flex-1 text-center">
+                <p className="text-xl font-medium text-gray-900">Olá, {user?.email}</p>
+              </div>
             </div>
           </div>
 
