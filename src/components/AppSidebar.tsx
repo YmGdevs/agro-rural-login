@@ -42,9 +42,12 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { signOut } = useAuth();
-  const { role, hasBackofficeAccess, isAdmin, isEmpresaFomentadora } = useRole();
+  const { role, hasBackofficeAccess, isAdmin, isEmpresaFomentadora, isExtensionista } = useRole();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Debug log to check current role
+  console.log('Current user role:', role, 'isExtensionista:', isExtensionista, 'isEmpresaFomentadora:', isEmpresaFomentadora);
 
   // Role-based navigation items
   const getNavigationItems = () => {
