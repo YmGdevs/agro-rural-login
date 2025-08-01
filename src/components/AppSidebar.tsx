@@ -53,6 +53,7 @@ export function AppSidebar() {
       return [
         { title: "Home", icon: Home, url: "/empresa-fomentadora" },
         { title: "Pedidos de Empréstimo", icon: DollarSign, url: "/loan-request" },
+        { title: "Aprovar Empréstimos", icon: Shield, url: "/empresa-fomentadora" },
       ];
     }
 
