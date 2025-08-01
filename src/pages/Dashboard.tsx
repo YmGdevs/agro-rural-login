@@ -74,11 +74,11 @@ const Dashboard = () => {
             </Card>
 
             {/* Action Buttons Grid */}
-            <div className="flex gap-4 mb-6 overflow-x-auto pb-2">
+            <div className="grid grid-cols-2 gap-4 mb-6">
               {actionButtons.map((button, index) => (
                 <Card 
                   key={index} 
-                  className="bg-white rounded-2xl shadow-sm border-0 overflow-hidden cursor-pointer hover:shadow-md transition-shadow min-w-[180px] flex-shrink-0"
+                  className="bg-white rounded-2xl shadow-sm border-0 overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
                   onClick={() => {
                     if (button.title === "Registar Produtor") {
                       navigate("/register-producer");
