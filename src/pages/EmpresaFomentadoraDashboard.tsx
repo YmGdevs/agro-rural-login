@@ -14,7 +14,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { CheckCircle, XCircle, Clock, Users, DollarSign, BarChart3, Eye } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Users, DollarSign, BarChart3, Eye, QrCode } from "lucide-react";
+import QRCode from "qrcode";
 
 interface LoanRequest {
   id: string;
@@ -74,6 +75,8 @@ export default function EmpresaFomentadoraDashboard() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [regionFilter, setRegionFilter] = useState<string>("all");
   const [stats, setStats] = useState<DashboardStats>({ pending: 0, approved: 0, rejected: 0, total: 0 });
+  const [voucherQR, setVoucherQR] = useState<string>("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
     if (hasLoanReviewAccess) {
@@ -239,6 +242,23 @@ export default function EmpresaFomentadoraDashboard() {
 
   const uniqueRegions = Array.from(new Set(loanRequests.map(req => req.extensionista?.region).filter(Boolean)));
 
+  const generateVoucherQR = async (voucherCode: string) => {
+    try {
+      const qrDataURL = await QRCode.toDataURL(voucherCode);
+      setVoucherQR(qrDataURL);
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+    }
+  };
+
+  const handleCardClick = (request: LoanRequest) => {
+    setSelectedRequest(request);
+    setIsDialogOpen(true);
+    if (request.voucher && request.status === 'approved') {
+      generateVoucherQR(request.voucher.voucher_code);
+    }
+  };
+
   // Wait for role loading to complete before checking access
   if (roleLoading) {
     return (
@@ -379,11 +399,22 @@ export default function EmpresaFomentadoraDashboard() {
           {/* Loan Requests List */}
           <div className="grid gap-4">
             {filteredRequests.map((request) => (
-              <Card key={request.id} className="hover:shadow-md transition-shadow">
+              <Card 
+                key={request.id} 
+                className={`hover:shadow-md transition-shadow ${
+                  request.status === 'approved' ? 'cursor-pointer hover:border-green-300' : ''
+                }`}
+                onClick={() => request.status === 'approved' ? handleCardClick(request) : undefined}
+              >
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
-                      <CardTitle className="text-lg">{request.producer?.nome_completo || "Produtor não especificado"}</CardTitle>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        {request.producer?.nome_completo || "Produtor não especificado"}
+                        {request.status === 'approved' && request.voucher && (
+                          <QrCode className="h-4 w-4 text-green-600" />
+                        )}
+                      </CardTitle>
                       <CardDescription>
                         Extensionista: {request.extensionista?.full_name || "Não especificado"} • 
                         Região: {request.extensionista?.region || "Não especificada"}
@@ -528,17 +559,25 @@ export default function EmpresaFomentadoraDashboard() {
                                     <strong>Data da Revisão:</strong> {new Date(selectedRequest.reviewed_at).toLocaleString('pt-BR')}
                                   </p>
                                 )}
-                                {selectedRequest.voucher && selectedRequest.status === 'approved' && (
-                                  <div className="mt-3 p-3 bg-green-50 rounded border border-green-200">
-                                    <p className="text-sm font-medium text-green-800 mb-1">Código do Voucher:</p>
-                                    <div className="bg-green-100 text-green-800 px-3 py-1 rounded font-mono text-sm font-medium inline-block">
-                                      {selectedRequest.voucher.voucher_code}
-                                    </div>
-                                    <p className="text-xs text-green-600 mt-1">
-                                      Gerado em: {new Date(selectedRequest.voucher.created_at).toLocaleDateString('pt-BR')}
-                                    </p>
-                                  </div>
-                                )}
+                                 {selectedRequest.voucher && selectedRequest.status === 'approved' && (
+                                   <div className="mt-3 p-3 bg-green-50 rounded border border-green-200">
+                                     <p className="text-sm font-medium text-green-800 mb-1">Código do Voucher:</p>
+                                     <div className="bg-green-100 text-green-800 px-3 py-1 rounded font-mono text-sm font-medium inline-block">
+                                       {selectedRequest.voucher.voucher_code}
+                                     </div>
+                                     <p className="text-xs text-green-600 mt-1">
+                                       Gerado em: {new Date(selectedRequest.voucher.created_at).toLocaleDateString('pt-BR')}
+                                     </p>
+                                     {voucherQR && (
+                                       <div className="mt-4 text-center">
+                                         <p className="text-sm font-medium text-green-800 mb-2">QR Code do Voucher:</p>
+                                         <div className="inline-block p-2 bg-white rounded border">
+                                           <img src={voucherQR} alt="QR Code do Voucher" className="w-48 h-48" />
+                                         </div>
+                                       </div>
+                                     )}
+                                   </div>
+                                 )}
                                 {selectedRequest.review_comments && (
                                   <p className="text-sm mt-2">
                                     <strong>Comentários:</strong> {selectedRequest.review_comments}
@@ -628,6 +667,64 @@ export default function EmpresaFomentadoraDashboard() {
           </main>
         </div>
       </div>
+
+      {/* Dialog for approved loan requests with voucher QR code */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Pedido Aprovado - Voucher</DialogTitle>
+            <DialogDescription>
+              Voucher gerado para o pedido aprovado
+            </DialogDescription>
+          </DialogHeader>
+          {selectedRequest && selectedRequest.status === 'approved' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-semibold mb-2">Informações do Produtor</h4>
+                  <div className="space-y-2 text-sm">
+                    <p><strong>Nome:</strong> {selectedRequest.producer?.nome_completo || "N/A"}</p>
+                    <p><strong>NUIT:</strong> {selectedRequest.producer?.nuit || "N/A"}</p>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">Informações do Empréstimo</h4>
+                  <div className="space-y-2 text-sm">
+                    <p><strong>Tipo:</strong> {selectedRequest.loan_type === 'money' ? 'Dinheiro' : 'Item'}</p>
+                    <p><strong>Valor:</strong> {
+                      selectedRequest.loan_type === 'money' 
+                        ? formatCurrency(selectedRequest.amount)
+                        : selectedRequest.item_description
+                    }</p>
+                  </div>
+                </div>
+              </div>
+
+              {selectedRequest.voucher && (
+                <div className="p-4 bg-green-50 rounded border border-green-200">
+                  <h4 className="font-semibold text-green-800 mb-3">Voucher Gerado</h4>
+                  <div className="text-center">
+                    <div className="bg-green-100 text-green-800 px-3 py-2 rounded font-mono text-lg font-medium inline-block mb-3">
+                      {selectedRequest.voucher.voucher_code}
+                    </div>
+                    <p className="text-sm text-green-600 mb-4">
+                      Gerado em: {new Date(selectedRequest.voucher.created_at).toLocaleDateString('pt-BR')}
+                    </p>
+                    {voucherQR && (
+                      <div>
+                        <p className="text-sm font-medium text-green-800 mb-2">QR Code:</p>
+                        <div className="inline-block p-4 bg-white rounded border-2 border-green-200">
+                          <img src={voucherQR} alt="QR Code do Voucher" className="w-64 h-64" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   );
 }
