@@ -46,77 +46,42 @@ export default function ExtensionistasManagement() {
 
   const fetchData = async () => {
     try {
-      // Get basic extensionistas list
-      const profilesResponse = await (supabase.from('profiles').select('*').eq('role', 'extensionista') as any);
-      const profiles = profilesResponse.data || [];
+      // Use the database function to get extensionistas with statistics
+      const { data: extensionistasData, error } = await (supabase as any).rpc('get_extensionistas_with_stats');
       
-      if (profiles.length === 0) {
+      if (error) {
+        console.error('Error fetching extensionistas data:', error);
         setExtensionistas([]);
         setStats({ totalExtensionistas: 0, totalProducers: 0, totalParcelas: 0, totalArea: 0 });
         return;
       }
 
-      const extensionistasWithMetrics: ExtensionistData[] = [];
-      let totalProducersSum = 0;
-      let totalParcelasSum = 0;
-      let totalAreaSum = 0;
+      // Transform the data to match our interface
+      const extensionistasWithMetrics: ExtensionistData[] = (extensionistasData || []).map((ext: any) => ({
+        id: ext.id,
+        full_name: ext.full_name,
+        username: ext.username,
+        created_at: ext.created_at,
+        producers_count: Number(ext.producers_count),
+        parcelas_count: Number(ext.parcelas_count),
+        total_area: Math.round(Number(ext.total_area_m2) / 10000 * 100) / 100, // Convert to hectares
+        last_activity: ext.updated_at || ext.created_at,
+      }));
 
-      // Calculate metrics for each extensionista
-      for (const profile of profiles) {
-        // Get producers count for this extensionista
-        const producersResponse = await (supabase
-          .from('producers')
-          .select('id')
-          .eq('extensionista_id', profile.id) as any);
-        const producers = producersResponse.data || [];
-        const producersCount = producers.length;
-
-        let parcelasCount = 0;
-        let totalArea = 0;
-
-        if (producers.length > 0) {
-          // Get parcelas for these producers
-          const producerIds = producers.map((p: any) => p.id);
-          const parcelasResponse = await (supabase
-            .from('parcelas')
-            .select('area_metros_quadrados')
-            .in('produtor_id', producerIds) as any);
-          const parcelas = parcelasResponse.data || [];
-          
-          parcelasCount = parcelas.length;
-          
-          // Calculate total area in hectares
-          const areaSum = parcelas.reduce((sum: number, p: any) => {
-            return sum + (Number(p.area_metros_quadrados) || 0);
-          }, 0);
-          totalArea = Math.round(areaSum / 10000 * 100) / 100; // Convert to hectares
-        }
-
-        extensionistasWithMetrics.push({
-          id: profile.id,
-          full_name: profile.full_name,
-          username: profile.username,
-          created_at: profile.created_at,
-          producers_count: producersCount,
-          parcelas_count: parcelasCount,
-          total_area: totalArea,
-          last_activity: profile.updated_at || profile.created_at,
-        });
-
-        totalProducersSum += producersCount;
-        totalParcelasSum += parcelasCount;
-        totalAreaSum += totalArea;
-      }
+      // Calculate totals
+      const totalProducers = extensionistasWithMetrics.reduce((sum, ext) => sum + ext.producers_count, 0);
+      const totalParcelas = extensionistasWithMetrics.reduce((sum, ext) => sum + ext.parcelas_count, 0);
+      const totalArea = extensionistasWithMetrics.reduce((sum, ext) => sum + ext.total_area, 0);
 
       setExtensionistas(extensionistasWithMetrics);
       setStats({
-        totalExtensionistas: profiles.length,
-        totalProducers: totalProducersSum,
-        totalParcelas: totalParcelasSum,
-        totalArea: Math.round(totalAreaSum * 100) / 100,
+        totalExtensionistas: extensionistasWithMetrics.length,
+        totalProducers,
+        totalParcelas,
+        totalArea: Math.round(totalArea * 100) / 100,
       });
       
-      console.log('Fetched extensionistas with metrics:', profiles.length);
+      console.log('Fetched extensionistas with complete metrics:', extensionistasWithMetrics.length);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
