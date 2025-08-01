@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 type Producer = {
   id: string;
@@ -23,6 +24,7 @@ const ProducersList = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchProducers();
@@ -38,18 +40,50 @@ const ProducersList = () => {
 
   const fetchProducers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('producers')
-        .select('*')
-        .order('created_at', { ascending: false });
+      if (!user) {
+        toast.error("Utilizador não autenticado");
+        return;
+      }
 
-      if (error) {
+      // Get the current user's profile to get their profile ID  
+      const profileResponse = await supabase
+        .from('profiles')
+        .select('id, role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileResponse.error || !profileResponse.data) {
+        toast.error("Erro ao identificar o perfil do utilizador");
+        return;
+      }
+
+      const profile = profileResponse.data;
+
+      // Create query with type assertion to avoid TS inference issues
+      let producersResponse;
+      
+      if (profile.role === 'extensionista') {
+        producersResponse = await (supabase as any)
+          .from('producers')
+          .select('*')
+          .eq('extensionista_id', profile.id)
+          .order('created_at', { ascending: false });
+      } else {
+        producersResponse = await (supabase as any)
+          .from('producers')
+          .select('*')
+          .order('created_at', { ascending: false });
+      }
+
+      if (producersResponse.error) {
+        console.error('Error fetching producers:', producersResponse.error);
         toast.error("Erro ao carregar a lista de produtores");
         return;
       }
 
-      setProducers(data || []);
+      setProducers(producersResponse.data || []);
     } catch (error) {
+      console.error('Error in fetchProducers:', error);
       toast.error("Erro ao carregar a lista de produtores");
     } finally {
       setLoading(false);
