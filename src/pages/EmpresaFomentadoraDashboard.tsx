@@ -8,12 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, XCircle, Clock, Users, DollarSign, BarChart3, Eye, Menu, LogOut } from "lucide-react";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
+import { CheckCircle, XCircle, Clock, Users, DollarSign, BarChart3, Eye } from "lucide-react";
 
 interface LoanRequest {
   id: string;
@@ -59,7 +60,6 @@ interface DashboardStats {
 
 export default function EmpresaFomentadoraDashboard() {
   const { hasLoanReviewAccess } = useRole();
-  const { signOut } = useAuth();
   const { toast } = useToast();
   const [loanRequests, setLoanRequests] = useState<LoanRequest[]>([]);
   const [filteredRequests, setFilteredRequests] = useState<LoanRequest[]>([]);
@@ -237,26 +237,23 @@ export default function EmpresaFomentadoraDashboard() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard - Empresa Fomentadora</h1>
-          <p className="text-muted-foreground">Gerencie pedidos de empréstimo e analise capacidade regional</p>
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon">
-              <Menu className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={signOut}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Sair
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <AppSidebar />
+        <div className="flex-1">
+          <header className="border-b">
+            <div className="flex h-16 items-center px-4">
+              <SidebarTrigger />
+              <div className="ml-4">
+                <h1 className="text-2xl font-bold">Dashboard - Empresa Fomentadora</h1>
+              </div>
+            </div>
+          </header>
+          
+          <main className="p-6 space-y-6">
+            <div>
+              <p className="text-muted-foreground">Gerencie pedidos de empréstimo e analise capacidade regional</p>
+            </div>
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -582,6 +579,9 @@ export default function EmpresaFomentadoraDashboard() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+          </main>
+        </div>
+      </div>
+    </SidebarProvider>
   );
 }
