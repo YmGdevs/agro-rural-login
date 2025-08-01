@@ -329,43 +329,41 @@ const LoanRequest = () => {
               <div className="space-y-3">
                 {loanRequests.map((request) => (
                   <Card key={request.id} className="bg-white/70 backdrop-blur-sm border border-white/50">
-                    <CardHeader className="pb-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="text-lg">{request.producer?.nome_completo || "Produtor não especificado"}</CardTitle>
-                          <p className="text-sm text-gray-600">NUIT: {request.producer?.nuit || "N/A"}</p>
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-base text-gray-900">{request.producer?.nome_completo || "Produtor não especificado"}</h3>
+                          <p className="text-xs text-gray-500">NUIT: {request.producer?.nuit || "N/A"}</p>
                         </div>
                         {getStatusBadge(request.status)}
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 gap-4 mb-3">
+                      
+                      <div className="grid grid-cols-2 gap-3 mb-2">
                         <div>
-                          <p className="text-sm text-gray-500">Tipo</p>
-                          <p className="font-medium">{request.loan_type === 'money' ? 'Dinheiro' : 'Item/Produto'}</p>
+                          <span className="text-xs text-gray-500">Tipo: </span>
+                          <span className="text-sm font-medium">{request.loan_type === 'money' ? 'Dinheiro' : 'Item'}</span>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Valor</p>
-                          <p className="font-medium">
+                          <span className="text-xs text-gray-500">Valor: </span>
+                          <span className="text-sm font-medium">
                             {request.amount ? `${request.amount.toLocaleString()} MZN` : 'N/A'}
-                          </p>
+                          </span>
                         </div>
                       </div>
                       
                       {request.item_description && (
-                        <div className="mb-3">
-                          <p className="text-sm text-gray-500">Item</p>
-                          <p className="font-medium">{request.item_description}</p>
+                        <div className="mb-2">
+                          <span className="text-xs text-gray-500">Item: </span>
+                          <span className="text-sm">{request.item_description}</span>
                         </div>
                       )}
                       
-                      <div className="mb-3">
-                        <p className="text-sm text-gray-500">Justificação</p>
+                      <div className="mb-2">
                         <p className="text-sm text-gray-700 line-clamp-2">{request.justification}</p>
                       </div>
                       
-                      <div className="text-xs text-gray-500">
-                        Submetido em {new Date(request.created_at).toLocaleDateString('pt-PT')}
+                      <div className="text-xs text-gray-400">
+                        {new Date(request.created_at).toLocaleDateString('pt-PT')}
                       </div>
                     </CardContent>
                   </Card>
