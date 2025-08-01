@@ -492,7 +492,7 @@ export default function AgrodellerDashboard() {
               <h2 className="text-xl font-semibold mb-4 text-blue-600">Vouchers Resgatados ({redeemed.length})</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {redeemed.map((voucher) => (
-                  <Card key={voucher.id} className="border-blue-200">
+                  <Card key={voucher.id} className="border-blue-200 bg-blue-50">
                     <CardHeader>
                       <CardTitle className="text-sm font-medium">{voucher.voucher_code}</CardTitle>
                       <CardDescription>
@@ -504,10 +504,11 @@ export default function AgrodellerDashboard() {
                         <p><strong>NUIT:</strong> {voucher.loan_request.producer.nuit}</p>
                         <p><strong>Valor:</strong> {voucher.loan_request.amount?.toLocaleString('pt-MZ')} MZN</p>
                         <p><strong>Tipo:</strong> {voucher.loan_request.loan_type}</p>
-                        <p><strong>Resgatado em:</strong> {new Date(voucher.redeemed_at!).toLocaleString('pt-PT')}</p>
+                        <p><strong>Extensionista:</strong> {voucher.loan_request.extensionista.full_name}</p>
+                        <p><strong>Resgatado em:</strong> {new Date(voucher.redeemed_at!).toLocaleString('pt-MZ')}</p>
                         <Badge variant="secondary" className="bg-blue-100 text-blue-800">
                           <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Resgatado
+                          ✅ Resgatado
                         </Badge>
                       </div>
                       <Button 
