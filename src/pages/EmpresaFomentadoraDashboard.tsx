@@ -59,7 +59,7 @@ interface DashboardStats {
 }
 
 export default function EmpresaFomentadoraDashboard() {
-  const { hasLoanReviewAccess, role } = useRole();
+  const { hasLoanReviewAccess, role, loading: roleLoading } = useRole();
   const { toast } = useToast();
   const [loanRequests, setLoanRequests] = useState<LoanRequest[]>([]);
   const [filteredRequests, setFilteredRequests] = useState<LoanRequest[]>([]);
@@ -212,6 +212,15 @@ export default function EmpresaFomentadoraDashboard() {
   };
 
   const uniqueRegions = Array.from(new Set(loanRequests.map(req => req.extensionista?.region).filter(Boolean)));
+
+  // Wait for role loading to complete before checking access
+  if (roleLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
+      </div>
+    );
+  }
 
   if (!hasLoanReviewAccess) {
     return (
