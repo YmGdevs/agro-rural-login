@@ -312,6 +312,27 @@ export default function AgrodellerDashboard() {
   useEffect(() => {
     if (!roleLoading && isAgrodealer) {
       fetchVouchers();
+      
+      // Set up real-time subscription for voucher updates
+      const channel = supabase
+        .channel('voucher-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'vouchers'
+          },
+          (payload) => {
+            console.log('Voucher change detected:', payload);
+            fetchVouchers(); // Refresh the list when vouchers change
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [roleLoading, isAgrodealer]);
 
