@@ -93,6 +93,34 @@ const Dashboard = () => {
       </div>
 
       <div className="px-6 pb-24">
+        {/* Weather Card */}
+        <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-2xl shadow-lg border-0 mb-6">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="text-4xl">🌤️</div>
+                <div>
+                  <p className="text-white/80 text-sm">Thursday</p>
+                  <p className="text-3xl font-light">24°C</p>
+                </div>
+              </div>
+              <div className="text-right text-sm text-white/80 space-y-1">
+                <div className="flex items-center space-x-2">
+                  <span>💨</span>
+                  <span>53 km/h</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span>🌡️</span>
+                  <span>15° / 24°</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span>💧</span>
+                  <span>45%</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Action Buttons Grid */}
         <div className="grid grid-cols-2 gap-4 mt-6">
