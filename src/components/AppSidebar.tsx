@@ -53,6 +53,7 @@ export function AppSidebar() {
 
     const backofficeItems = hasBackofficeAccess ? [
       { title: "Backoffice", icon: BarChart3, url: "/backoffice" },
+      { title: "Extensionistas", icon: Users, url: "/extensionistas" },
     ] : [];
 
     const adminItems = isAdmin ? [

@@ -15,6 +15,7 @@ import ProducerParcelas from "./pages/ProducerParcelas";
 import LoanRequest from "./pages/LoanRequest";
 import BackofficeDashboard from "./pages/BackofficeDashboard";
 import UserManagement from "./pages/UserManagement";
+import ExtensionistasManagement from "./pages/ExtensionistasManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -69,6 +70,13 @@ const App = () => (
               <ProtectedRoute>
                 <RoleBasedRoute allowedRoles={['admin']}>
                   <UserManagement />
+                </RoleBasedRoute>
+              </ProtectedRoute>
+            } />
+            <Route path="/extensionistas" element={
+              <ProtectedRoute>
+                <RoleBasedRoute allowedRoles={['admin', 'backoffice']}>
+                  <ExtensionistasManagement />
                 </RoleBasedRoute>
               </ProtectedRoute>
             } />
