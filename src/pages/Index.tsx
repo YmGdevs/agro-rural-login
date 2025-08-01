@@ -34,9 +34,13 @@ const Index = () => {
       <div className="absolute inset-0 bg-black/40"></div>
       <div className="max-w-2xl mx-auto text-center relative z-10">
         <div className="bg-white/90 backdrop-blur-sm rounded-lg p-8 shadow-xl">
-          <h1 className="text-4xl font-bold text-green-800 mb-4">
-            MilAgre
-          </h1>
+          <div className="flex justify-center mb-6">
+            <img 
+              src="/lovable-uploads/29c5f575-a299-4422-ae13-378ab3c03f85.png" 
+              alt="Instituto do Algodão & Oleaginosas Moçambique" 
+              className="h-20 w-auto"
+            />
+          </div>
           <h2 className="text-xl text-gray-600 mb-6">
             Sistema de Gestão Agrícola
           </h2>
