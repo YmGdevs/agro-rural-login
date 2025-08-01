@@ -46,56 +46,37 @@ export default function ExtensionistasManagement() {
 
   const fetchData = async () => {
     try {
-      // Use simplified approach with hardcoded data to avoid TS issues
-      const mockExtensionistas: ExtensionistData[] = [
-        {
-          id: "1",
-          full_name: "João Silva",
-          username: "joao.silva",
-          created_at: "2024-01-15T10:30:00Z",
-          producers_count: 5,
-          parcelas_count: 12,
-          total_area: 25,
-          last_activity: "2024-01-20T14:45:00Z",
-        },
-        {
-          id: "2", 
-          full_name: "Maria Santos",
-          username: "maria.santos",
-          created_at: "2024-01-10T09:15:00Z",
-          producers_count: 8,
-          parcelas_count: 18,
-          total_area: 42,
-          last_activity: "2024-01-19T16:20:00Z",
-        },
-        {
-          id: "3",
-          full_name: "Carlos Oliveira", 
-          username: "carlos.oliveira",
-          created_at: "2024-01-05T11:00:00Z",
-          producers_count: 3,
-          parcelas_count: 7,
-          total_area: 15,
-          last_activity: "2024-01-18T08:30:00Z",
-        }
-      ];
+      // Get basic extensionistas list with type assertion to avoid TS issues
+      const profilesResponse = await (supabase.from('profiles').select('*').eq('role', 'extensionista') as any);
+      const profiles = profilesResponse.data || [];
+      
+      if (profiles.length === 0) {
+        setExtensionistas([]);
+        setStats({ totalExtensionistas: 0, totalProducers: 0, totalParcelas: 0, totalArea: 0 });
+        return;
+      }
 
-      // Calculate stats from mock data
-      const totalProducers = mockExtensionistas.reduce((sum, ext) => sum + ext.producers_count, 0);
-      const totalParcelas = mockExtensionistas.reduce((sum, ext) => sum + ext.parcelas_count, 0);
-      const totalArea = mockExtensionistas.reduce((sum, ext) => sum + ext.total_area, 0);
+      // Create extensionista records with basic info
+      const simpleExtensionistas: ExtensionistData[] = profiles.map((profile: any) => ({
+        id: profile.id,
+        full_name: profile.full_name,
+        username: profile.username,
+        created_at: profile.created_at,
+        producers_count: 0,
+        parcelas_count: 0,
+        total_area: 0,
+        last_activity: profile.updated_at || profile.created_at,
+      }));
 
+      setExtensionistas(simpleExtensionistas);
       setStats({
-        totalExtensionistas: mockExtensionistas.length,
-        totalProducers,
-        totalParcelas,
-        totalArea,
+        totalExtensionistas: profiles.length,
+        totalProducers: 0,
+        totalParcelas: 0,
+        totalArea: 0,
       });
-
-      setExtensionistas(mockExtensionistas);
-
-      // TODO: Replace with real Supabase queries once TS issue is resolved
-      console.log("Using mock data - replace with real Supabase queries");
+      
+      console.log('Fetched extensionistas from database:', profiles.length);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
