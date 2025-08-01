@@ -45,6 +45,7 @@ const LoanRequest = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
   
   const [selectedProducer, setSelectedProducer] = useState("");
   const [communityConsent, setCommunityConsent] = useState(false);
@@ -151,34 +152,44 @@ const LoanRequest = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Submit button clicked!'); // Debug log
     
+    // Reset field errors
+    const errors: Record<string, boolean> = {};
+    
+    // Check required fields and mark errors
     if (!selectedProducer) {
-      toast({
-        title: "Erro",
-        description: "Selecione um produtor",
-        variant: "destructive",
-      });
-      return;
+      errors.selectedProducer = true;
     }
-
+    
     if (!communityConsent) {
+      errors.communityConsent = true;
+    }
+    
+    if (!loanValue) {
+      errors.loanValue = true;
+    }
+    
+    if (loanType === "item" && !itemDescription) {
+      errors.itemDescription = true;
+    }
+    
+    if (!justification) {
+      errors.justification = true;
+    }
+    
+    // If there are errors, set them and show toast
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       toast({
         title: "Erro",
-        description: "É necessário confirmar o consentimento da comunidade",
+        description: "Preencha todos os campos obrigatórios destacados",
         variant: "destructive",
       });
       return;
     }
-
-    if (!loanValue || (loanType === "item" && !itemDescription) || !justification) {
-      toast({
-        title: "Erro",
-        description: "Preencha todos os campos obrigatórios",
-        variant: "destructive",
-      });
-      return;
-    }
+    
+    // Clear errors if validation passes
+    setFieldErrors({});
 
     setSubmitting(true);
     
@@ -393,8 +404,18 @@ const LoanRequest = () => {
                     </div>
                   </div>
                   
-                  <Select value={selectedProducer} onValueChange={setSelectedProducer}>
-                    <SelectTrigger className="bg-gray-50 border-0 rounded-xl h-12">
+                  <Select 
+                    value={selectedProducer} 
+                    onValueChange={(value) => {
+                      setSelectedProducer(value);
+                      if (fieldErrors.selectedProducer) {
+                        setFieldErrors(prev => ({ ...prev, selectedProducer: false }));
+                      }
+                    }}
+                  >
+                    <SelectTrigger className={`bg-gray-50 border-0 rounded-xl h-12 ${
+                      fieldErrors.selectedProducer ? 'ring-2 ring-red-500 bg-red-50' : ''
+                    }`}>
                       <SelectValue placeholder="Escolha um produtor" />
                     </SelectTrigger>
                     <SelectContent>
@@ -434,11 +455,18 @@ const LoanRequest = () => {
                     </div>
                   </div>
                   
-                  <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-xl">
+                  <div className={`flex items-start space-x-3 p-3 rounded-xl ${
+                    fieldErrors.communityConsent ? 'bg-red-50 ring-2 ring-red-500' : 'bg-blue-50'
+                  }`}>
                     <Checkbox
                       id="consent"
                       checked={communityConsent}
-                      onCheckedChange={(checked) => setCommunityConsent(checked === true)}
+                      onCheckedChange={(checked) => {
+                        setCommunityConsent(checked === true);
+                        if (fieldErrors.communityConsent) {
+                          setFieldErrors(prev => ({ ...prev, communityConsent: false }));
+                        }
+                      }}
                       className="mt-0.5"
                     />
                     <Label htmlFor="consent" className="text-xs leading-relaxed text-gray-700">
@@ -489,8 +517,15 @@ const LoanRequest = () => {
                     type="number"
                     placeholder="0.00"
                     value={loanValue}
-                    onChange={(e) => setLoanValue(e.target.value)}
-                    className="bg-gray-50 border-0 rounded-xl h-12 text-base font-semibold"
+                    onChange={(e) => {
+                      setLoanValue(e.target.value);
+                      if (fieldErrors.loanValue) {
+                        setFieldErrors(prev => ({ ...prev, loanValue: false }));
+                      }
+                    }}
+                    className={`bg-gray-50 border-0 rounded-xl h-12 text-base font-semibold ${
+                      fieldErrors.loanValue ? 'ring-2 ring-red-500 bg-red-50' : ''
+                    }`}
                   />
                 </div>
 
@@ -504,8 +539,15 @@ const LoanRequest = () => {
                       id="item-description"
                       placeholder="Ex: Sementes de milho, ferramentas agrícolas..."
                       value={itemDescription}
-                      onChange={(e) => setItemDescription(e.target.value)}
-                      className="bg-gray-50 border-0 rounded-xl h-12"
+                      onChange={(e) => {
+                        setItemDescription(e.target.value);
+                        if (fieldErrors.itemDescription) {
+                          setFieldErrors(prev => ({ ...prev, itemDescription: false }));
+                        }
+                      }}
+                      className={`bg-gray-50 border-0 rounded-xl h-12 ${
+                        fieldErrors.itemDescription ? 'ring-2 ring-red-500 bg-red-50' : ''
+                      }`}
                     />
                   </div>
                 )}
@@ -526,8 +568,15 @@ const LoanRequest = () => {
                 <Textarea
                   placeholder="Explique o motivo do empréstimo e como será utilizado..."
                   value={justification}
-                  onChange={(e) => setJustification(e.target.value)}
-                  className="bg-gray-50 border-0 rounded-xl min-h-[100px] resize-none text-sm"
+                  onChange={(e) => {
+                    setJustification(e.target.value);
+                    if (fieldErrors.justification) {
+                      setFieldErrors(prev => ({ ...prev, justification: false }));
+                    }
+                  }}
+                  className={`bg-gray-50 border-0 rounded-xl min-h-[100px] resize-none text-sm ${
+                    fieldErrors.justification ? 'ring-2 ring-red-500 bg-red-50' : ''
+                  }`}
                 />
               </div>
 
