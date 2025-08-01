@@ -12,7 +12,9 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useRole } from "@/hooks/useRole";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, CreditCard, User, Shield, DollarSign, FileText, Plus, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ArrowLeft, CreditCard, User, Shield, DollarSign, FileText, Plus, Clock, CheckCircle, XCircle, QrCode } from "lucide-react";
+import QRCode from "qrcode";
 
 interface Producer {
   id: string;
@@ -57,6 +59,9 @@ const LoanRequest = () => {
   const [loanValue, setLoanValue] = useState("");
   const [itemDescription, setItemDescription] = useState("");
   const [justification, setJustification] = useState("");
+  const [selectedVoucherRequest, setSelectedVoucherRequest] = useState<LoanRequest | null>(null);
+  const [voucherQR, setVoucherQR] = useState<string>("");
+  const [isVoucherDialogOpen, setIsVoucherDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -269,6 +274,23 @@ const LoanRequest = () => {
     }
   };
 
+  const generateVoucherQR = async (voucherCode: string) => {
+    try {
+      const qrDataURL = await QRCode.toDataURL(voucherCode);
+      setVoucherQR(qrDataURL);
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+    }
+  };
+
+  const handleApprovedLoanClick = (request: LoanRequest) => {
+    if (request.status === 'approved' && request.voucher) {
+      setSelectedVoucherRequest(request);
+      setIsVoucherDialogOpen(true);
+      generateVoucherQR(request.voucher.voucher_code);
+    }
+  };
+
   const selectedProducerData = producers.find(p => p.id === selectedProducer);
 
   if (loading) {
@@ -333,11 +355,26 @@ const LoanRequest = () => {
             ) : (
               <div className="space-y-3">
                 {loanRequests.map((request) => (
-                  <Card key={request.id} className="bg-white/70 backdrop-blur-sm border border-white/50">
+                  <Card 
+                    key={request.id} 
+                    className={`bg-white/70 backdrop-blur-sm border border-white/50 ${
+                      request.status === 'approved' && request.voucher 
+                        ? 'cursor-pointer hover:shadow-lg hover:border-green-300 transition-all' 
+                        : ''
+                    }`}
+                    onClick={() => handleApprovedLoanClick(request)}
+                  >
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-base text-gray-900">{request.producer?.nome_completo || "Produtor não especificado"}</h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-base text-gray-900">
+                              {request.producer?.nome_completo || "Produtor não especificado"}
+                            </h3>
+                            {request.status === 'approved' && request.voucher && (
+                              <QrCode className="h-4 w-4 text-green-600" />
+                            )}
+                          </div>
                           <p className="text-xs text-gray-500">NUIT: {request.producer?.nuit || "N/A"}</p>
                           {request.voucher && request.status === 'approved' && (
                             <div className="mt-2">
@@ -615,6 +652,52 @@ const LoanRequest = () => {
           </div>
         )}
       </div>
+
+      {/* Dialog for voucher QR code */}
+      <Dialog open={isVoucherDialogOpen} onOpenChange={setIsVoucherDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Voucher do Empréstimo</DialogTitle>
+            <DialogDescription>
+              QR Code para o voucher aprovado
+            </DialogDescription>
+          </DialogHeader>
+          {selectedVoucherRequest && (
+            <div className="space-y-4">
+              <div className="text-center">
+                <h4 className="font-semibold text-gray-900 mb-2">
+                  {selectedVoucherRequest.producer?.nome_completo}
+                </h4>
+                <p className="text-sm text-gray-600 mb-4">
+                  NUIT: {selectedVoucherRequest.producer?.nuit}
+                </p>
+              </div>
+              
+              {selectedVoucherRequest.voucher && (
+                <div className="p-4 bg-green-50 rounded-xl border border-green-200">
+                  <div className="text-center">
+                    <div className="bg-green-100 text-green-800 px-3 py-2 rounded-lg font-mono text-lg font-medium inline-block mb-4">
+                      {selectedVoucherRequest.voucher.voucher_code}
+                    </div>
+                    
+                    {voucherQR && (
+                      <div>
+                        <p className="text-sm font-medium text-green-800 mb-3">QR Code do Voucher:</p>
+                        <div className="inline-block p-3 bg-white rounded-lg border-2 border-green-200">
+                          <img src={voucherQR} alt="QR Code do Voucher" className="w-48 h-48" />
+                        </div>
+                        <p className="text-xs text-green-600 mt-3">
+                          Gerado em: {new Date(selectedVoucherRequest.voucher.created_at).toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
