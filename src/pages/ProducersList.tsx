@@ -63,12 +63,14 @@ const ProducersList = () => {
       let producersResponse;
       
       if (profile.role === 'extensionista') {
+        // Extensionistas only see their own producers
         producersResponse = await (supabase as any)
           .from('producers')
           .select('*')
           .eq('extensionista_id', profile.id)
           .order('created_at', { ascending: false });
       } else {
+        // Admin and backoffice see all producers
         producersResponse = await (supabase as any)
           .from('producers')
           .select('*')
