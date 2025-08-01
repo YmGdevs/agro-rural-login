@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { RoleBasedRoute } from "@/components/RoleBasedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import RegisterProducer from "./pages/RegisterProducer";
@@ -12,6 +13,8 @@ import DemarcateArea from "./pages/DemarcateArea";
 import ProducersList from "./pages/ProducersList";
 import ProducerParcelas from "./pages/ProducerParcelas";
 import LoanRequest from "./pages/LoanRequest";
+import BackofficeDashboard from "./pages/BackofficeDashboard";
+import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -53,6 +56,20 @@ const App = () => (
             <Route path="/loan-request" element={
               <ProtectedRoute>
                 <LoanRequest />
+              </ProtectedRoute>
+            } />
+            <Route path="/backoffice" element={
+              <ProtectedRoute>
+                <RoleBasedRoute allowedRoles={['admin', 'backoffice']}>
+                  <BackofficeDashboard />
+                </RoleBasedRoute>
+              </ProtectedRoute>
+            } />
+            <Route path="/user-management" element={
+              <ProtectedRoute>
+                <RoleBasedRoute allowedRoles={['admin']}>
+                  <UserManagement />
+                </RoleBasedRoute>
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

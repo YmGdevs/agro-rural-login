@@ -20,8 +20,11 @@ import {
   BarChart3,
   BookOpen,
   User,
+  Settings,
+  Shield,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useRole } from "@/hooks/useRole";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
@@ -37,8 +40,27 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { signOut } = useAuth();
+  const { role, hasBackofficeAccess, isAdmin } = useRole();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Role-based navigation items
+  const getNavigationItems = () => {
+    const baseItems = [
+      { title: "Início", icon: Home, url: "/dashboard" },
+      { title: "Produtores", icon: Users, url: "/producers" },
+    ];
+
+    const backofficeItems = hasBackofficeAccess ? [
+      { title: "Backoffice", icon: BarChart3, url: "/backoffice" },
+    ] : [];
+
+    const adminItems = isAdmin ? [
+      { title: "Utilizadores", icon: Shield, url: "/user-management" },
+    ] : [];
+
+    return [...baseItems, ...backofficeItems, ...adminItems];
+  };
 
   const handleSignOut = async () => {
     try {
@@ -67,15 +89,11 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu className="space-y-2">
               {/* Navigation Items */}
-              {navigationItems.map((item) => (
+              {getNavigationItems().map((item) => (
                 <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
-                      className={`rounded-xl ${
-                        item.active
-                          ? "bg-primary/10 text-primary hover:bg-primary/20"
-                          : "text-gray-600 hover:bg-gray-100"
-                      }`}
+                      className="rounded-xl text-gray-600 hover:bg-gray-100"
                   >
                     <button
                       onClick={() => navigate(item.url)}
