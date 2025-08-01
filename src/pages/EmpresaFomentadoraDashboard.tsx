@@ -40,6 +40,10 @@ interface LoanRequest {
     full_name: string;
     region: string | null;
   } | null;
+  voucher: {
+    voucher_code: string;
+    created_at: string;
+  } | null;
 }
 
 interface RegionalCapacity {
@@ -89,7 +93,8 @@ export default function EmpresaFomentadoraDashboard() {
         .select(`
           *,
           producer:producers(nome_completo, nuit, idade, genero),
-          extensionista:profiles!fk_loan_requests_extensionista(full_name, region)
+          extensionista:profiles!fk_loan_requests_extensionista(full_name, region),
+          voucher:vouchers(voucher_code, created_at)
         `)
         .order('created_at', { ascending: false });
 
@@ -160,14 +165,35 @@ export default function EmpresaFomentadoraDashboard() {
 
       if (error) throw error;
 
+      // If approved, fetch the voucher that was automatically created by the trigger
+      let voucherMessage = '';
+      if (status === 'approved') {
+        // Wait a moment for the trigger to complete
+        setTimeout(async () => {
+          const { data: voucher } = await supabase
+            .from('vouchers')
+            .select('voucher_code')
+            .eq('loan_request_id', requestId)
+            .single();
+          
+          if (voucher) {
+            voucherMessage = ` Voucher gerado: ${voucher.voucher_code}`;
+          }
+        }, 1000);
+      }
+
       toast({
         title: status === 'approved' ? "Pedido Aprovado" : "Pedido Rejeitado",
-        description: `O pedido foi ${status === 'approved' ? 'aprovado' : 'rejeitado'} com sucesso.`,
+        description: `O pedido foi ${status === 'approved' ? 'aprovado' : 'rejeitado'} com sucesso.${voucherMessage}`,
       });
 
       setSelectedRequest(null);
       setReviewComments("");
-      fetchLoanRequests();
+      
+      // Refresh data to show the new voucher
+      setTimeout(() => {
+        fetchLoanRequests();
+      }, 1500);
     } catch (error) {
       console.error('Error reviewing request:', error);
       toast({
@@ -501,6 +527,17 @@ export default function EmpresaFomentadoraDashboard() {
                                   <p className="text-sm">
                                     <strong>Data da Revisão:</strong> {new Date(selectedRequest.reviewed_at).toLocaleString('pt-BR')}
                                   </p>
+                                )}
+                                {selectedRequest.voucher && selectedRequest.status === 'approved' && (
+                                  <div className="mt-3 p-3 bg-green-50 rounded border border-green-200">
+                                    <p className="text-sm font-medium text-green-800 mb-1">Código do Voucher:</p>
+                                    <div className="bg-green-100 text-green-800 px-3 py-1 rounded font-mono text-sm font-medium inline-block">
+                                      {selectedRequest.voucher.voucher_code}
+                                    </div>
+                                    <p className="text-xs text-green-600 mt-1">
+                                      Gerado em: {new Date(selectedRequest.voucher.created_at).toLocaleDateString('pt-BR')}
+                                    </p>
+                                  </div>
                                 )}
                                 {selectedRequest.review_comments && (
                                   <p className="text-sm mt-2">

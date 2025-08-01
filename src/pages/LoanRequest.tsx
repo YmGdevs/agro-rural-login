@@ -34,6 +34,10 @@ interface LoanRequest {
     nome_completo: string;
     nuit: string;
   } | null;
+  voucher: {
+    voucher_code: string;
+    created_at: string;
+  } | null;
 }
 
 const LoanRequest = () => {
@@ -134,7 +138,8 @@ const LoanRequest = () => {
           justification,
           status,
           created_at,
-          producer:producers(nome_completo, nuit)
+          producer:producers(nome_completo, nuit),
+          voucher:vouchers(voucher_code, created_at)
         `)
         .eq('extensionista_id', profile.id)
         .order('created_at', { ascending: false });
@@ -334,6 +339,14 @@ const LoanRequest = () => {
                         <div className="flex-1">
                           <h3 className="font-semibold text-base text-gray-900">{request.producer?.nome_completo || "Produtor não especificado"}</h3>
                           <p className="text-xs text-gray-500">NUIT: {request.producer?.nuit || "N/A"}</p>
+                          {request.voucher && request.status === 'approved' && (
+                            <div className="mt-2">
+                              <span className="text-xs text-gray-500 block">Código do Voucher:</span>
+                              <div className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm font-mono font-medium inline-block">
+                                {request.voucher.voucher_code}
+                              </div>
+                            </div>
+                          )}
                         </div>
                         {getStatusBadge(request.status)}
                       </div>

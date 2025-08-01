@@ -253,11 +253,39 @@ export type Database = {
         }
         Relationships: []
       }
+      vouchers: {
+        Row: {
+          created_at: string
+          id: string
+          loan_request_id: string
+          updated_at: string
+          voucher_code: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          loan_request_id: string
+          updated_at?: string
+          voucher_code: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          loan_request_id?: string
+          updated_at?: string
+          voucher_code?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      generate_voucher_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["app_role"]
