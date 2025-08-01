@@ -118,7 +118,7 @@ const Auth = () => {
       }}
     >
       <div className="absolute inset-0 bg-black/40"></div>
-      <Card className="w-full max-w-md relative z-10 bg-white/95 backdrop-blur-sm">
+      <Card className="w-full max-w-md relative z-10 bg-white/70 backdrop-blur-sm">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <img 
