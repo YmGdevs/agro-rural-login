@@ -55,6 +55,28 @@ const LoanRequest = () => {
 
   useEffect(() => {
     fetchData();
+    
+    // Set up real-time subscription for loan_requests
+    const channel = supabase
+      .channel('loan_requests_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'loan_requests'
+        },
+        (payload) => {
+          console.log('Real-time update:', payload);
+          // Refresh loan requests when any change occurs
+          fetchLoanRequests();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchData = async () => {
