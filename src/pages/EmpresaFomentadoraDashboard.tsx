@@ -35,11 +35,11 @@ interface LoanRequest {
     nuit: string;
     idade: number;
     genero: string;
-  };
+  } | null;
   extensionista: {
     full_name: string;
     region: string | null;
-  };
+  } | null;
 }
 
 interface RegionalCapacity {
@@ -84,10 +84,6 @@ export default function EmpresaFomentadoraDashboard() {
 
   const fetchLoanRequests = async () => {
     try {
-      console.log('Fetching loan requests...');
-      console.log('Current user role:', role);
-      console.log('Has loan review access:', hasLoanReviewAccess);
-      
       const { data, error } = await supabase
         .from('loan_requests')
         .select(`
@@ -97,11 +93,8 @@ export default function EmpresaFomentadoraDashboard() {
         `)
         .order('created_at', { ascending: false });
 
-      console.log('Supabase response:', { data, error });
-
       if (error) throw error;
 
-      console.log('Fetched loan requests:', data?.length || 0);
       setLoanRequests((data as any) || []);
       calculateStats((data as any) || []);
     } catch (error) {
@@ -147,7 +140,7 @@ export default function EmpresaFomentadoraDashboard() {
     }
 
     if (regionFilter !== "all") {
-      filtered = filtered.filter(req => req.extensionista.region === regionFilter);
+      filtered = filtered.filter(req => req.extensionista?.region === regionFilter);
     }
 
     setFilteredRequests(filtered);
@@ -218,7 +211,7 @@ export default function EmpresaFomentadoraDashboard() {
     return `${area.toLocaleString()} m²`;
   };
 
-  const uniqueRegions = Array.from(new Set(loanRequests.map(req => req.extensionista.region).filter(Boolean)));
+  const uniqueRegions = Array.from(new Set(loanRequests.map(req => req.extensionista?.region).filter(Boolean)));
 
   if (!hasLoanReviewAccess) {
     return (
@@ -355,10 +348,10 @@ export default function EmpresaFomentadoraDashboard() {
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
-                      <CardTitle className="text-lg">{request.producer.nome_completo}</CardTitle>
+                      <CardTitle className="text-lg">{request.producer?.nome_completo || "Produtor não especificado"}</CardTitle>
                       <CardDescription>
-                        Extensionista: {request.extensionista.full_name} • 
-                        Região: {request.extensionista.region || "Não especificada"}
+                        Extensionista: {request.extensionista?.full_name || "Não especificado"} • 
+                        Região: {request.extensionista?.region || "Não especificada"}
                       </CardDescription>
                     </div>
                     <Badge className={getStatusColor(request.status)}>
@@ -391,7 +384,7 @@ export default function EmpresaFomentadoraDashboard() {
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">NUIT</p>
-                      <p className="font-medium">{request.producer.nuit}</p>
+                      <p className="font-medium">{request.producer?.nuit || "N/A"}</p>
                     </div>
                   </div>
                   
@@ -425,10 +418,10 @@ export default function EmpresaFomentadoraDashboard() {
                               <div>
                                 <h4 className="font-semibold mb-2">Informações do Produtor</h4>
                                 <div className="space-y-2 text-sm">
-                                  <p><strong>Nome:</strong> {selectedRequest.producer.nome_completo}</p>
-                                  <p><strong>NUIT:</strong> {selectedRequest.producer.nuit}</p>
-                                  <p><strong>Idade:</strong> {selectedRequest.producer.idade} anos</p>
-                                  <p><strong>Gênero:</strong> {selectedRequest.producer.genero}</p>
+                                  <p><strong>Nome:</strong> {selectedRequest.producer?.nome_completo || "N/A"}</p>
+                                  <p><strong>NUIT:</strong> {selectedRequest.producer?.nuit || "N/A"}</p>
+                                  <p><strong>Idade:</strong> {selectedRequest.producer?.idade || "N/A"} anos</p>
+                                  <p><strong>Gênero:</strong> {selectedRequest.producer?.genero || "N/A"}</p>
                                 </div>
                               </div>
                               <div>
