@@ -59,6 +59,7 @@ export type Database = {
         Row: {
           created_at: string
           documento_url: string | null
+          extensionista_id: string | null
           genero: string
           id: string
           idade: number
@@ -69,6 +70,7 @@ export type Database = {
         Insert: {
           created_at?: string
           documento_url?: string | null
+          extensionista_id?: string | null
           genero: string
           id?: string
           idade: number
@@ -79,6 +81,7 @@ export type Database = {
         Update: {
           created_at?: string
           documento_url?: string | null
+          extensionista_id?: string | null
           genero?: string
           id?: string
           idade?: number
@@ -86,32 +89,52 @@ export type Database = {
           nuit?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "producers_extensionista_id_fkey"
+            columns: ["extensionista_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
+          contact_email: string | null
+          contact_phone: string | null
           created_at: string
           full_name: string | null
           id: string
-          role: string
+          region: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          territory: Json | null
           updated_at: string
           user_id: string
           username: string | null
         }
         Insert: {
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
-          role?: string
+          region?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          territory?: Json | null
           updated_at?: string
           user_id: string
           username?: string | null
         }
         Update: {
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
-          role?: string
+          region?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          territory?: Json | null
           updated_at?: string
           user_id?: string
           username?: string | null
@@ -123,10 +146,33 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      get_extensionistas_with_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          full_name: string
+          username: string
+          created_at: string
+          updated_at: string
+          producers_count: number
+          parcelas_count: number
+          total_area_m2: number
+        }[]
+      }
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "extensionista" | "admin" | "backoffice" | "empresa_fomentadora"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -253,6 +299,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["extensionista", "admin", "backoffice", "empresa_fomentadora"],
+    },
   },
 } as const
