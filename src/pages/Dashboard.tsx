@@ -53,6 +53,7 @@ const Dashboard = () => {
                     <div>
                       <p className="text-white/80 text-sm">Thursday</p>
                       <p className="text-3xl font-light">24°C</p>
+                      <p className="text-white/80 text-sm">Maputo, Moçambique</p>
                     </div>
                   </div>
                   <div className="text-right text-sm text-white/80 space-y-1">
