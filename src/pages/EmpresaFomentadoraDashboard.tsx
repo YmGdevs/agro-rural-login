@@ -93,7 +93,7 @@ export default function EmpresaFomentadoraDashboard() {
         .select(`
           *,
           producer:producers(nome_completo, nuit, idade, genero),
-          extensionista:profiles(full_name, region)
+          extensionista:profiles!fk_loan_requests_extensionista(full_name, region)
         `)
         .order('created_at', { ascending: false });
 
