@@ -59,7 +59,7 @@ interface DashboardStats {
 }
 
 export default function EmpresaFomentadoraDashboard() {
-  const { hasLoanReviewAccess } = useRole();
+  const { hasLoanReviewAccess, role } = useRole();
   const { toast } = useToast();
   const [loanRequests, setLoanRequests] = useState<LoanRequest[]>([]);
   const [filteredRequests, setFilteredRequests] = useState<LoanRequest[]>([]);
@@ -84,6 +84,10 @@ export default function EmpresaFomentadoraDashboard() {
 
   const fetchLoanRequests = async () => {
     try {
+      console.log('Fetching loan requests...');
+      console.log('Current user role:', role);
+      console.log('Has loan review access:', hasLoanReviewAccess);
+      
       const { data, error } = await supabase
         .from('loan_requests')
         .select(`
@@ -93,8 +97,11 @@ export default function EmpresaFomentadoraDashboard() {
         `)
         .order('created_at', { ascending: false });
 
+      console.log('Supabase response:', { data, error });
+
       if (error) throw error;
 
+      console.log('Fetched loan requests:', data?.length || 0);
       setLoanRequests((data as any) || []);
       calculateStats((data as any) || []);
     } catch (error) {
