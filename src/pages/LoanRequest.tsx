@@ -151,6 +151,7 @@ const LoanRequest = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Submit button clicked!'); // Debug log
     
     if (!selectedProducer) {
       toast({
