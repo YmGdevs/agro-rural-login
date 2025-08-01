@@ -8,6 +8,7 @@ import { Camera, User, FileText, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const RegisterProducer = () => {
   const [formData, setFormData] = useState({
@@ -18,6 +19,7 @@ const RegisterProducer = () => {
     documento: null as File | null
   });
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -51,7 +53,19 @@ const RegisterProducer = () => {
     }
 
     try {
-      // Insert producer data into database
+      // Get the current user's profile to get their profile ID
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (profileError || !profile) {
+        toast.error("Erro ao identificar o extensionista. Tente novamente.");
+        return;
+      }
+
+      // Insert producer data into database with extensionista_id
       const { error } = await supabase
         .from('producers')
         .insert({
@@ -59,7 +73,8 @@ const RegisterProducer = () => {
           genero: formData.genero,
           idade: parseInt(formData.idade),
           nuit: formData.nuit,
-          documento_url: formData.documento.name // For now, just store filename
+          documento_url: formData.documento.name, // For now, just store filename
+          extensionista_id: profile.id
         });
 
       if (error) {
