@@ -46,9 +46,6 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Debug log to check current role
-  console.log('Current user role:', role, 'isExtensionista:', isExtensionista, 'isEmpresaFomentadora:', isEmpresaFomentadora);
-
   // Role-based navigation items
   const getNavigationItems = () => {
     // Empresa fomentadora has different navigation
