@@ -275,7 +275,15 @@ export type Database = {
           updated_at?: string
           voucher_code?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_vouchers_loan_request"
+            columns: ["loan_request_id"]
+            isOneToOne: true
+            referencedRelation: "loan_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
