@@ -1,17 +1,19 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRole } from "@/hooks/useRole";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, XCircle, Clock, Users, DollarSign, BarChart3, Eye } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Users, DollarSign, BarChart3, Eye, Menu, LogOut } from "lucide-react";
 
 interface LoanRequest {
   id: string;
@@ -57,6 +59,7 @@ interface DashboardStats {
 
 export default function EmpresaFomentadoraDashboard() {
   const { hasLoanReviewAccess } = useRole();
+  const { signOut } = useAuth();
   const { toast } = useToast();
   const [loanRequests, setLoanRequests] = useState<LoanRequest[]>([]);
   const [filteredRequests, setFilteredRequests] = useState<LoanRequest[]>([]);
@@ -240,6 +243,19 @@ export default function EmpresaFomentadoraDashboard() {
           <h1 className="text-3xl font-bold">Dashboard - Empresa Fomentadora</h1>
           <p className="text-muted-foreground">Gerencie pedidos de empréstimo e analise capacidade regional</p>
         </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon">
+              <Menu className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={signOut}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Sair
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Statistics Cards */}
