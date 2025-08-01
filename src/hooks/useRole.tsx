@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
-export type AppRole = 'extensionista' | 'admin' | 'backoffice' | 'empresa_fomentadora';
+export type AppRole = 'extensionista' | 'admin' | 'backoffice' | 'empresa_fomentadora' | 'agrodealer';
 
 interface UseRoleReturn {
   role: AppRole | null;
@@ -11,6 +11,7 @@ interface UseRoleReturn {
   isBackoffice: boolean;
   isExtensionista: boolean;
   isEmpresaFomentadora: boolean;
+  isAgrodealer: boolean;
   hasBackofficeAccess: boolean;
   hasLoanReviewAccess: boolean;
 }
@@ -61,6 +62,7 @@ export function useRole(): UseRoleReturn {
     isBackoffice: role === 'backoffice',
     isExtensionista: role === 'extensionista',
     isEmpresaFomentadora: role === 'empresa_fomentadora',
+    isAgrodealer: role === 'agrodealer',
     hasBackofficeAccess: role === 'admin' || role === 'backoffice',
     hasLoanReviewAccess: role === 'admin' || role === 'empresa_fomentadora',
   };

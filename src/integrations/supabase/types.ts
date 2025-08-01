@@ -258,6 +258,8 @@ export type Database = {
           created_at: string
           id: string
           loan_request_id: string
+          redeemed_at: string | null
+          redeemed_by: string | null
           updated_at: string
           voucher_code: string
         }
@@ -265,6 +267,8 @@ export type Database = {
           created_at?: string
           id?: string
           loan_request_id: string
+          redeemed_at?: string | null
+          redeemed_by?: string | null
           updated_at?: string
           voucher_code: string
         }
@@ -272,6 +276,8 @@ export type Database = {
           created_at?: string
           id?: string
           loan_request_id?: string
+          redeemed_at?: string | null
+          redeemed_by?: string | null
           updated_at?: string
           voucher_code?: string
         }
@@ -281,6 +287,13 @@ export type Database = {
             columns: ["loan_request_id"]
             isOneToOne: true
             referencedRelation: "loan_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vouchers_redeemed_by_fkey"
+            columns: ["redeemed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

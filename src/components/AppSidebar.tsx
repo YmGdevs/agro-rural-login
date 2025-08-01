@@ -24,6 +24,7 @@ import {
   Shield,
   Building2,
   DollarSign,
+  QrCode,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRole } from "@/hooks/useRole";
@@ -42,12 +43,20 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { signOut } = useAuth();
-  const { role, hasBackofficeAccess, isAdmin, isEmpresaFomentadora, isExtensionista } = useRole();
+  const { role, hasBackofficeAccess, isAdmin, isEmpresaFomentadora, isExtensionista, isAgrodealer } = useRole();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   // Role-based navigation items
   const getNavigationItems = () => {
+    // Agrodealer has specific navigation
+    if (isAgrodealer) {
+      return [
+        { title: "Dashboard", icon: Home, url: "/agrodealer" },
+        { title: "Vouchers", icon: QrCode, url: "/agrodealer" },
+      ];
+    }
+
     // Empresa fomentadora has different navigation
     if (isEmpresaFomentadora) {
       return [
