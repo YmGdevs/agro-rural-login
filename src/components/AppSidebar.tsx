@@ -51,12 +51,13 @@ export function AppSidebar() {
     // Empresa fomentadora has different navigation
     if (isEmpresaFomentadora) {
       return [
+        { title: "Home", icon: Home, url: "/empresa-fomentadora" },
         { title: "Pedidos de Empréstimo", icon: DollarSign, url: "/loan-request" },
       ];
     }
 
     const baseItems = [
-      { title: "Início", icon: Home, url: "/dashboard" },
+      { title: "Home", icon: Home, url: "/dashboard" },
       { title: "Produtores", icon: Users, url: "/producers" },
     ];
 
