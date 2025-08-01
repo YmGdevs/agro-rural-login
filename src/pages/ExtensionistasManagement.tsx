@@ -46,8 +46,13 @@ export default function ExtensionistasManagement() {
 
   const fetchData = async () => {
     try {
-      // Use the database function to get extensionistas with statistics
-      const { data: extensionistasData, error } = await (supabase as any).rpc('get_extensionistas_with_stats');
+      // Create a simple fetch wrapper to avoid TS issues
+      const fetchExtensionistasStats = async () => {
+        const { data, error } = await (supabase as any).rpc('get_extensionistas_with_stats');
+        return { data, error };
+      };
+
+      const { data: extensionistasData, error } = await fetchExtensionistasStats();
       
       if (error) {
         console.error('Error fetching extensionistas data:', error);
@@ -56,17 +61,28 @@ export default function ExtensionistasManagement() {
         return;
       }
 
-      // Transform the data to match our interface
-      const extensionistasWithMetrics: ExtensionistData[] = (extensionistasData || []).map((ext: any) => ({
-        id: ext.id,
-        full_name: ext.full_name,
-        username: ext.username,
-        created_at: ext.created_at,
-        producers_count: Number(ext.producers_count),
-        parcelas_count: Number(ext.parcelas_count),
-        total_area: Math.round(Number(ext.total_area_m2) / 10000 * 100) / 100, // Convert to hectares
-        last_activity: ext.updated_at || ext.created_at,
-      }));
+      if (!extensionistasData || extensionistasData.length === 0) {
+        setExtensionistas([]);
+        setStats({ totalExtensionistas: 0, totalProducers: 0, totalParcelas: 0, totalArea: 0 });
+        return;
+      }
+
+      // Transform the data to match our interface with explicit typing
+      const extensionistasWithMetrics: ExtensionistData[] = [];
+      
+      for (const ext of extensionistasData) {
+        const extensionista: ExtensionistData = {
+          id: String(ext.id),
+          full_name: String(ext.full_name || ''),
+          username: String(ext.username || ''),
+          created_at: String(ext.created_at),
+          producers_count: Number(ext.producers_count || 0),
+          parcelas_count: Number(ext.parcelas_count || 0),
+          total_area: Math.round(Number(ext.total_area_m2 || 0) / 10000 * 100) / 100, // Convert to hectares
+          last_activity: String(ext.updated_at || ext.created_at),
+        };
+        extensionistasWithMetrics.push(extensionista);
+      }
 
       // Calculate totals
       const totalProducers = extensionistasWithMetrics.reduce((sum, ext) => sum + ext.producers_count, 0);
