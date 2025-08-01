@@ -135,69 +135,72 @@ const LoanRequest = () => {
 
       <div className="px-4 py-4 pb-20">
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Seleção do Produtor */}
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-white/50">
-            <div className="flex items-center mb-3">
-              <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mr-3">
-                <User className="h-5 w-5 text-purple-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 text-sm">Beneficiário</h3>
-                <p className="text-xs text-gray-500">Selecione o produtor</p>
-              </div>
-            </div>
-            
-            <Select value={selectedProducer} onValueChange={setSelectedProducer}>
-              <SelectTrigger className="bg-gray-50 border-0 rounded-xl h-12">
-                <SelectValue placeholder="Escolha um produtor" />
-              </SelectTrigger>
-              <SelectContent>
-                {producers.map((producer) => (
-                  <SelectItem key={producer.id} value={producer.id}>
-                    <div className="flex flex-col">
-                      <span className="font-medium text-sm">{producer.nome_completo}</span>
-                      <span className="text-xs text-gray-500">NUIT: {producer.nuit}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {selectedProducerData && (
-              <div className="mt-3 p-3 bg-purple-50 rounded-xl">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="font-medium text-gray-900 text-sm">{selectedProducerData.nome_completo}</p>
-                    <p className="text-xs text-gray-600">NUIT: {selectedProducerData.nuit}</p>
-                  </div>
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+          {/* Beneficiário e Consentimento */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Seleção do Produtor */}
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-white/50">
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mr-3">
+                  <User className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 text-sm">Beneficiário</h3>
+                  <p className="text-xs text-gray-500">Selecione o produtor</p>
                 </div>
               </div>
-            )}
-          </div>
+              
+              <Select value={selectedProducer} onValueChange={setSelectedProducer}>
+                <SelectTrigger className="bg-gray-50 border-0 rounded-xl h-12">
+                  <SelectValue placeholder="Escolha um produtor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {producers.map((producer) => (
+                    <SelectItem key={producer.id} value={producer.id}>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">{producer.nome_completo}</span>
+                        <span className="text-xs text-gray-500">NUIT: {producer.nuit}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-          {/* Consentimento */}
-          <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-white/50">
-            <div className="flex items-center mb-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-3">
-                <Shield className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 text-sm">Consentimento</h3>
-                <p className="text-xs text-gray-500">Aprovação da comunidade</p>
-              </div>
+              {selectedProducerData && (
+                <div className="mt-3 p-3 bg-purple-50 rounded-xl">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="font-medium text-gray-900 text-sm">{selectedProducerData.nome_completo}</p>
+                      <p className="text-xs text-gray-600">NUIT: {selectedProducerData.nuit}</p>
+                    </div>
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  </div>
+                </div>
+              )}
             </div>
-            
-            <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-xl">
-              <Checkbox
-                id="consent"
-                checked={communityConsent}
-                onCheckedChange={(checked) => setCommunityConsent(checked === true)}
-                className="mt-0.5"
-              />
-              <Label htmlFor="consent" className="text-xs leading-relaxed text-gray-700">
-                Confirmo que há consentimento da comunidade para este pedido de empréstimo
-              </Label>
+
+            {/* Consentimento */}
+            <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-white/50">
+              <div className="flex items-center mb-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-3">
+                  <Shield className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 text-sm">Consentimento</h3>
+                  <p className="text-xs text-gray-500">Aprovação da comunidade</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start space-x-3 p-3 bg-blue-50 rounded-xl">
+                <Checkbox
+                  id="consent"
+                  checked={communityConsent}
+                  onCheckedChange={(checked) => setCommunityConsent(checked === true)}
+                  className="mt-0.5"
+                />
+                <Label htmlFor="consent" className="text-xs leading-relaxed text-gray-700">
+                  Confirmo que há consentimento da comunidade para este pedido de empréstimo
+                </Label>
+              </div>
             </div>
           </div>
 
