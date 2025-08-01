@@ -9,6 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useRole } from "@/hooks/useRole";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, CreditCard, User, Shield, DollarSign, FileText } from "lucide-react";
 
@@ -21,6 +22,7 @@ interface Producer {
 const LoanRequest = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { role } = useRole();
   const [producers, setProducers] = useState<Producer[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -88,16 +90,57 @@ const LoanRequest = () => {
 
     setSubmitting(true);
     
-    // Here you would typically save to database
-    // For now, just show success message
-    
-    setTimeout(() => {
+    try {
+      // Get current user's profile to get extensionista_id
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile) throw new Error("Profile not found");
+
+      // Create loan request
+      const { error } = await supabase
+        .from('loan_requests')
+        .insert({
+          producer_id: selectedProducer,
+          extensionista_id: profile.id,
+          loan_type: loanType,
+          amount: loanType === 'money' ? parseFloat(loanValue) : null,
+          item_description: loanType === 'item' ? itemDescription : null,
+          description: loanValue,
+          justification,
+          community_consent: communityConsent,
+          status: 'pending'
+        });
+
+      if (error) throw error;
+
       toast({
         title: "Sucesso",
         description: "Pedido de empréstimo submetido com sucesso",
       });
-      navigate("/dashboard");
-    }, 1000);
+      
+      // Navigate to appropriate dashboard based on role
+      if (role === 'empresa_fomentadora') {
+        navigate("/empresa-fomentadora");
+      } else {
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      console.error('Error submitting loan request:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao submeter pedido de empréstimo",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const selectedProducerData = producers.find(p => p.id === selectedProducer);

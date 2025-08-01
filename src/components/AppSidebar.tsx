@@ -22,6 +22,8 @@ import {
   User,
   Settings,
   Shield,
+  Building2,
+  DollarSign,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRole } from "@/hooks/useRole";
@@ -40,12 +42,20 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { signOut } = useAuth();
-  const { role, hasBackofficeAccess, isAdmin } = useRole();
+  const { role, hasBackofficeAccess, isAdmin, isEmpresaFomentadora } = useRole();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   // Role-based navigation items
   const getNavigationItems = () => {
+    // Empresa fomentadora has different navigation
+    if (isEmpresaFomentadora) {
+      return [
+        { title: "Dashboard Empresa", icon: Building2, url: "/empresa-fomentadora" },
+        { title: "Pedidos de Empréstimo", icon: DollarSign, url: "/loan-request" },
+      ];
+    }
+
     const baseItems = [
       { title: "Início", icon: Home, url: "/dashboard" },
       { title: "Produtores", icon: Users, url: "/producers" },

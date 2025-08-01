@@ -14,6 +14,82 @@ export type Database = {
   }
   public: {
     Tables: {
+      loan_requests: {
+        Row: {
+          amount: number | null
+          community_consent: boolean
+          created_at: string
+          description: string | null
+          extensionista_id: string
+          id: string
+          item_description: string | null
+          justification: string
+          loan_type: string
+          producer_id: string
+          review_comments: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          community_consent?: boolean
+          created_at?: string
+          description?: string | null
+          extensionista_id: string
+          id?: string
+          item_description?: string | null
+          justification: string
+          loan_type: string
+          producer_id: string
+          review_comments?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          community_consent?: boolean
+          created_at?: string
+          description?: string | null
+          extensionista_id?: string
+          id?: string
+          item_description?: string | null
+          justification?: string
+          loan_type?: string
+          producer_id?: string
+          review_comments?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_loan_requests_extensionista"
+            columns: ["extensionista_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_loan_requests_producer"
+            columns: ["producer_id"]
+            isOneToOne: false
+            referencedRelation: "producers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_loan_requests_reviewer"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parcelas: {
         Row: {
           area_metros_quadrados: number | null
@@ -138,6 +214,42 @@ export type Database = {
           updated_at?: string
           user_id?: string
           username?: string | null
+        }
+        Relationships: []
+      }
+      regional_capacity: {
+        Row: {
+          average_loan_amount: number | null
+          created_at: string
+          id: string
+          region: string
+          success_rate: number | null
+          total_area_m2: number | null
+          total_parcelas: number | null
+          total_producers: number | null
+          updated_at: string
+        }
+        Insert: {
+          average_loan_amount?: number | null
+          created_at?: string
+          id?: string
+          region: string
+          success_rate?: number | null
+          total_area_m2?: number | null
+          total_parcelas?: number | null
+          total_producers?: number | null
+          updated_at?: string
+        }
+        Update: {
+          average_loan_amount?: number | null
+          created_at?: string
+          id?: string
+          region?: string
+          success_rate?: number | null
+          total_area_m2?: number | null
+          total_parcelas?: number | null
+          total_producers?: number | null
+          updated_at?: string
         }
         Relationships: []
       }

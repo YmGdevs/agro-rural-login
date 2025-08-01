@@ -16,6 +16,7 @@ import LoanRequest from "./pages/LoanRequest";
 import BackofficeDashboard from "./pages/BackofficeDashboard";
 import UserManagement from "./pages/UserManagement";
 import ExtensionistasManagement from "./pages/ExtensionistasManagement";
+import EmpresaFomentadoraDashboard from "./pages/EmpresaFomentadoraDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -77,6 +78,13 @@ const App = () => (
               <ProtectedRoute>
                 <RoleBasedRoute allowedRoles={['admin', 'backoffice']}>
                   <ExtensionistasManagement />
+                </RoleBasedRoute>
+              </ProtectedRoute>
+            } />
+            <Route path="/empresa-fomentadora" element={
+              <ProtectedRoute>
+                <RoleBasedRoute allowedRoles={['admin', 'empresa_fomentadora']}>
+                  <EmpresaFomentadoraDashboard />
                 </RoleBasedRoute>
               </ProtectedRoute>
             } />
