@@ -36,8 +36,8 @@ const Index = () => {
         <div className="bg-white/90 backdrop-blur-sm rounded-lg p-8 shadow-xl">
           <div className="flex justify-center mb-6">
             <img 
-              src="/lovable-uploads/29c5f575-a299-4422-ae13-378ab3c03f85.png" 
-              alt="Instituto do Algodão & Oleaginosas Moçambique" 
+              src="/src/assets/iaom-logo.png" 
+              alt="IAOM - Instituto do Algodão e Oleaginosas de Moçambique" 
               className="h-20 w-auto"
             />
           </div>

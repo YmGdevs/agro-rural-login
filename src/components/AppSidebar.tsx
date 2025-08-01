@@ -69,13 +69,13 @@ export function AppSidebar() {
               {/* Navigation Items */}
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    className={`rounded-xl ${
-                      item.active
-                        ? "bg-green-100 text-green-600 hover:bg-green-200"
-                        : "text-gray-600 hover:bg-gray-100"
-                    }`}
+                    <SidebarMenuButton
+                      asChild
+                      className={`rounded-xl ${
+                        item.active
+                          ? "bg-primary/10 text-primary hover:bg-primary/20"
+                          : "text-gray-600 hover:bg-gray-100"
+                      }`}
                   >
                     <button
                       onClick={() => navigate(item.url)}

@@ -29,7 +29,7 @@ const Dashboard = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-green-50">
+      <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         
         <main className="flex-1">
@@ -92,8 +92,8 @@ const Dashboard = () => {
                   }}
                 >
                   <CardContent className="p-6">
-                    <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mb-4">
-                      <button.icon className="h-8 w-8 text-green-600" />
+                    <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
+                      <button.icon className="h-8 w-8 text-primary" />
                     </div>
                     <h3 className="font-semibold text-gray-900 mb-1 text-sm">
                       {button.title}
@@ -114,7 +114,7 @@ const Dashboard = () => {
                     <h3 className="font-semibold text-gray-900 mb-1">Estado da Sincronização</h3>
                     <p className="text-sm text-gray-500">Última sincronização: há 2 horas</p>
                   </div>
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <div className="w-3 h-3 bg-primary rounded-full"></div>
                 </div>
               </CardContent>
             </Card>
