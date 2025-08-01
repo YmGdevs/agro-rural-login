@@ -51,7 +51,6 @@ export function AppSidebar() {
     // Empresa fomentadora has different navigation
     if (isEmpresaFomentadora) {
       return [
-        { title: "Dashboard Empresa", icon: Building2, url: "/empresa-fomentadora" },
         { title: "Pedidos de Empréstimo", icon: DollarSign, url: "/loan-request" },
       ];
     }
