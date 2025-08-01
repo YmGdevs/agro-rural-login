@@ -10,8 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CheckCircle2, QrCode, Search, ScanLine } from "lucide-react";
+import { CheckCircle2, QrCode, Search, ScanLine, Camera } from "lucide-react";
 import QRCode from "qrcode";
+import { useQRScanner } from "@/hooks/useQRScanner";
 
 interface VoucherWithDetails {
   id: string;
@@ -36,6 +37,7 @@ interface VoucherWithDetails {
 export default function AgrodellerDashboard() {
   const { isAgrodealer, loading: roleLoading } = useRole();
   const { toast } = useToast();
+  const { startScan, isScanning, isNativePlatform } = useQRScanner();
   const [vouchers, setVouchers] = useState<VoucherWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedVoucher, setSelectedVoucher] = useState<VoucherWithDetails | null>(null);
@@ -256,6 +258,57 @@ export default function AgrodellerDashboard() {
     }
   };
 
+  const handleQRScan = async () => {
+    try {
+      const scannedCode = await startScan();
+      if (scannedCode) {
+        // Use the scanned code directly to redeem
+        try {
+          // Find voucher by code
+          const { data: voucher, error: findError } = await supabase
+            .from('vouchers')
+            .select('id, redeemed_at')
+            .eq('voucher_code', scannedCode.trim())
+            .single();
+
+          if (findError || !voucher) {
+            toast({
+              title: "Voucher não encontrado",
+              description: "O QR code escaneado não corresponde a nenhum voucher válido.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          if (voucher.redeemed_at) {
+            toast({
+              title: "Voucher já resgatado",
+              description: "Este voucher já foi resgatado anteriormente.",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          await handleRedeemVoucher(voucher.id);
+        } catch (error) {
+          console.error('Error redeeming scanned voucher:', error);
+          toast({
+            title: "Erro ao resgatar voucher",
+            description: "Não foi possível resgatar o voucher escaneado.",
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error during QR scan:', error);
+      toast({
+        title: "Erro no scanner",
+        description: "Não foi possível escanear o QR code.",
+        variant: "destructive",
+      });
+    }
+  };
+
   useEffect(() => {
     if (!roleLoading && isAgrodealer) {
       fetchVouchers();
@@ -309,10 +362,23 @@ export default function AgrodellerDashboard() {
               <h1 className="text-3xl font-bold text-gray-900">Dashboard Agrodealer</h1>
               <p className="text-gray-600">Gerencie o resgate de vouchers aprovados</p>
             </div>
-            <Button onClick={() => setRedeemDialogOpen(true)} className="flex items-center gap-2">
-              <ScanLine className="h-4 w-4" />
-              Resgatar por Código
-            </Button>
+            <div className="flex gap-2">
+              {isNativePlatform && (
+                <Button 
+                  onClick={handleQRScan} 
+                  disabled={isScanning}
+                  className="flex items-center gap-2"
+                  variant="default"
+                >
+                  <Camera className="h-4 w-4" />
+                  {isScanning ? "Escaneando..." : "Escanear QR"}
+                </Button>
+              )}
+              <Button onClick={() => setRedeemDialogOpen(true)} className="flex items-center gap-2">
+                <ScanLine className="h-4 w-4" />
+                Resgatar por Código
+              </Button>
+            </div>
           </div>
 
           {/* Statistics */}
