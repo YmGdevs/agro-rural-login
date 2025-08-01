@@ -2,18 +2,25 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useRole } from "@/hooks/useRole";
 
 const Index = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+  const { isEmpresaFomentadora, loading: roleLoading } = useRole();
 
   useEffect(() => {
-    if (!loading && user) {
-      navigate("/dashboard");
+    if (!loading && !roleLoading && user) {
+      // Redirect empresa fomentadora to their specific dashboard
+      if (isEmpresaFomentadora) {
+        navigate("/empresa-fomentadora");
+      } else {
+        navigate("/dashboard");
+      }
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, roleLoading, isEmpresaFomentadora, navigate]);
 
-  if (loading) {
+  if (loading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
