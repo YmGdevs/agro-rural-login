@@ -216,14 +216,14 @@ const LoanRequest = () => {
         description: "Pedido de empréstimo submetido com sucesso",
       });
       
-      // Reset form and refresh data
-      setShowForm(false);
+      // Reset form and return to list view
       setSelectedProducer("");
       setCommunityConsent(false);
       setLoanType("money");
       setLoanValue("");
       setItemDescription("");
       setJustification("");
+      setShowForm(false);
       
       // Refresh loan requests
       fetchLoanRequests();
