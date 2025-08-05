@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Mail, Lock, UserPlus } from "lucide-react";
+import { User, Mail, Lock, UserPlus, Building2 } from "lucide-react";
+import { Textarea as TextareaComponent } from "@/components/ui/textarea";
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -17,6 +18,16 @@ const Auth = () => {
     password: "", 
     username: "", 
     full_name: "" 
+  });
+
+  const [exporterData, setExporterData] = useState({
+    email: "",
+    password: "",
+    company_name: "",
+    company_nuit: "",
+    contact_phone: "",
+    export_products: "",
+    company_address: ""
   });
   
   const navigate = useNavigate();
@@ -107,6 +118,71 @@ const Auth = () => {
     }
   };
 
+  const handleExporterSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      // Create auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: exporterData.email,
+        password: exporterData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            username: exporterData.company_name.toLowerCase().replace(/\s+/g, '_'),
+            full_name: exporterData.company_name,
+            role: 'exportador'
+          }
+        }
+      });
+
+      if (authError) throw authError;
+
+      // Create exporter profile
+      if (authData.user) {
+        const { error: exporterError } = await supabase
+          .from('exporters')
+          .insert({
+            user_id: authData.user.id,
+            company_name: exporterData.company_name,
+            company_nuit: exporterData.company_nuit,
+            contact_email: exporterData.email,
+            contact_phone: exporterData.contact_phone,
+            export_products: exporterData.export_products.split(',').map(p => p.trim()),
+            company_address: exporterData.company_address
+          });
+
+        if (exporterError) throw exporterError;
+      }
+
+      toast({
+        title: "Registo de exportador enviado!",
+        description: "Aguarde a aprovação do administrador para aceder ao sistema.",
+      });
+
+      // Reset form
+      setExporterData({
+        email: "",
+        password: "",
+        company_name: "",
+        company_nuit: "",
+        contact_phone: "",
+        export_products: "",
+        company_address: ""
+      });
+
+    } catch (error: any) {
+      toast({
+        title: "Erro no registo",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div 
       className="min-h-screen flex items-center justify-center p-4 relative"
@@ -131,9 +207,10 @@ const Auth = () => {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="signup">Registar</TabsTrigger>
+              <TabsTrigger value="exporter">Exportador</TabsTrigger>
             </TabsList>
             
             <TabsContent value="login">
@@ -244,6 +321,110 @@ const Auth = () => {
                 
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "A criar conta..." : "Criar Conta"}
+                </Button>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="exporter">
+              <form onSubmit={handleExporterSignup} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="company-name">Nome da Empresa</Label>
+                  <div className="relative">
+                    <Building2 className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="company-name"
+                      type="text"
+                      placeholder="Empresa Exportadora Lda"
+                      className="pl-10"
+                      value={exporterData.company_name}
+                      onChange={(e) => setExporterData({ ...exporterData, company_name: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="company-nuit">NUIT da Empresa</Label>
+                  <div className="relative">
+                    <UserPlus className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="company-nuit"
+                      type="text"
+                      placeholder="123456789"
+                      className="pl-10"
+                      value={exporterData.company_nuit}
+                      onChange={(e) => setExporterData({ ...exporterData, company_nuit: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="exporter-email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="exporter-email"
+                      type="email"
+                      placeholder="empresa@email.com"
+                      className="pl-10"
+                      value={exporterData.email}
+                      onChange={(e) => setExporterData({ ...exporterData, email: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="exporter-password">Palavra-passe</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="exporter-password"
+                      type="password"
+                      placeholder="••••••••"
+                      className="pl-10"
+                      value={exporterData.password}
+                      onChange={(e) => setExporterData({ ...exporterData, password: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="contact-phone">Telefone</Label>
+                  <Input
+                    id="contact-phone"
+                    type="tel"
+                    placeholder="+258 84 123 4567"
+                    value={exporterData.contact_phone}
+                    onChange={(e) => setExporterData({ ...exporterData, contact_phone: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="export-products">Produtos para Exportação</Label>
+                  <TextareaComponent
+                    id="export-products"
+                    placeholder="Algodão, Gergelim, Amendoim (separados por vírgula)"
+                    value={exporterData.export_products}
+                    onChange={(e) => setExporterData({ ...exporterData, export_products: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="company-address">Endereço da Empresa</Label>
+                  <TextareaComponent
+                    id="company-address"
+                    placeholder="Endereço completo da empresa"
+                    value={exporterData.company_address}
+                    onChange={(e) => setExporterData({ ...exporterData, company_address: e.target.value })}
+                  />
+                </div>
+
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? "A registar..." : "Registar como Exportador"}
                 </Button>
               </form>
             </TabsContent>

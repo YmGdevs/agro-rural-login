@@ -19,6 +19,7 @@ import UserManagement from "./pages/UserManagement";
 import ExtensionistasManagement from "./pages/ExtensionistasManagement";
 import EmpresaFomentadoraDashboard from "./pages/EmpresaFomentadoraDashboard";
 import AgrodellerDashboard from "./pages/AgrodellerDashboard";
+import ExportadorDashboard from "./pages/ExportadorDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -95,6 +96,13 @@ const App = () => (
               <ProtectedRoute>
                 <RoleBasedRoute allowedRoles={['admin', 'agrodealer']}>
                   <AgrodellerDashboard />
+                </RoleBasedRoute>
+              </ProtectedRoute>
+            } />
+            <Route path="/exportador" element={
+              <ProtectedRoute>
+                <RoleBasedRoute allowedRoles={['exportador', 'admin']}>
+                  <ExportadorDashboard />
                 </RoleBasedRoute>
               </ProtectedRoute>
             } />

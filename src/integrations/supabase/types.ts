@@ -14,6 +14,243 @@ export type Database = {
   }
   public: {
     Tables: {
+      export_applications: {
+        Row: {
+          application_type: string
+          approval_comments: string | null
+          created_at: string
+          destination_country: string
+          estimated_value: number | null
+          exporter_id: string
+          id: string
+          products: string[]
+          quantity_kg: number | null
+          review_comments: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          submitted_at: string
+          updated_at: string
+        }
+        Insert: {
+          application_type?: string
+          approval_comments?: string | null
+          created_at?: string
+          destination_country: string
+          estimated_value?: number | null
+          exporter_id: string
+          id?: string
+          products: string[]
+          quantity_kg?: number | null
+          review_comments?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string
+          updated_at?: string
+        }
+        Update: {
+          application_type?: string
+          approval_comments?: string | null
+          created_at?: string
+          destination_country?: string
+          estimated_value?: number | null
+          exporter_id?: string
+          id?: string
+          products?: string[]
+          quantity_kg?: number | null
+          review_comments?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submitted_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "export_applications_exporter_id_fkey"
+            columns: ["exporter_id"]
+            isOneToOne: false
+            referencedRelation: "exporters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "export_applications_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      export_certificates: {
+        Row: {
+          application_id: string
+          certificate_number: string
+          certificate_pdf_url: string | null
+          certificate_type: string
+          created_at: string
+          expiry_date: string
+          id: string
+          issued_by: string
+          issued_date: string
+          qr_code_data: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          application_id: string
+          certificate_number: string
+          certificate_pdf_url?: string | null
+          certificate_type?: string
+          created_at?: string
+          expiry_date: string
+          id?: string
+          issued_by: string
+          issued_date?: string
+          qr_code_data?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          application_id?: string
+          certificate_number?: string
+          certificate_pdf_url?: string | null
+          certificate_type?: string
+          created_at?: string
+          expiry_date?: string
+          id?: string
+          issued_by?: string
+          issued_date?: string
+          qr_code_data?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "export_certificates_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "export_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "export_certificates_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      export_documents: {
+        Row: {
+          created_at: string
+          document_name: string
+          document_type: string
+          exporter_id: string
+          file_size: number | null
+          file_url: string
+          id: string
+          review_comments: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          upload_date: string
+        }
+        Insert: {
+          created_at?: string
+          document_name: string
+          document_type: string
+          exporter_id: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+          review_comments?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          upload_date?: string
+        }
+        Update: {
+          created_at?: string
+          document_name?: string
+          document_type?: string
+          exporter_id?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          review_comments?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          upload_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "export_documents_exporter_id_fkey"
+            columns: ["exporter_id"]
+            isOneToOne: false
+            referencedRelation: "exporters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "export_documents_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exporters: {
+        Row: {
+          company_address: string | null
+          company_name: string
+          company_nuit: string
+          contact_email: string
+          contact_phone: string | null
+          created_at: string
+          export_products: string[] | null
+          id: string
+          registration_date: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_address?: string | null
+          company_name: string
+          company_nuit: string
+          contact_email: string
+          contact_phone?: string | null
+          created_at?: string
+          export_products?: string[] | null
+          id?: string
+          registration_date?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_address?: string | null
+          company_name?: string
+          company_nuit?: string
+          contact_email?: string
+          contact_phone?: string | null
+          created_at?: string
+          export_products?: string[] | null
+          id?: string
+          registration_date?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       loan_requests: {
         Row: {
           amount: number | null
@@ -303,6 +540,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_certificate_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       generate_voucher_code: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -339,6 +580,7 @@ export type Database = {
         | "backoffice"
         | "empresa_fomentadora"
         | "agrodealer"
+        | "exportador"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -472,6 +714,7 @@ export const Constants = {
         "backoffice",
         "empresa_fomentadora",
         "agrodealer",
+        "exportador",
       ],
     },
   },
