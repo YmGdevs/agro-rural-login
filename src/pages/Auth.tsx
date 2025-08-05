@@ -30,11 +30,22 @@ const Auth = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is already logged in
+    // Check if user is already logged in and redirect based on role
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate("/dashboard");
+        // Get user role to redirect correctly
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .single();
+
+        if (profile?.role === 'exportador') {
+          navigate("/exportador");
+        } else {
+          navigate("/dashboard");
+        }
       }
     };
     checkUser();
@@ -57,11 +68,26 @@ const Auth = () => {
           variant: "destructive",
         });
       } else {
+        // Get user session to check role
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('user_id', session.user.id)
+            .single();
+
+          if (profile?.role === 'exportador') {
+            navigate("/exportador");
+          } else {
+            navigate("/dashboard");
+          }
+        }
+        
         toast({
           title: "Login realizado com sucesso!",
           description: "Bem-vindo de volta.",
         });
-        navigate("/dashboard");
       }
     } catch (error) {
       toast({
@@ -153,8 +179,8 @@ const Auth = () => {
       }
 
       toast({
-        title: "Registo de exportador enviado!",
-        description: "Aguarde a aprovação do administrador para aceder ao sistema.",
+        title: "Conta de exportador criada com sucesso!",
+        description: "Pode agora fazer login e começar a submeter pedidos.",
       });
 
       // Reset form

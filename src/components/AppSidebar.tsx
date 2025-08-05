@@ -25,6 +25,9 @@ import {
   Building2,
   DollarSign,
   QrCode,
+  FileText,
+  Upload,
+  Award,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRole } from "@/hooks/useRole";
@@ -43,12 +46,22 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const { signOut } = useAuth();
-  const { role, hasBackofficeAccess, isAdmin, isEmpresaFomentadora, isExtensionista, isAgrodealer } = useRole();
+  const { role, hasBackofficeAccess, isAdmin, isEmpresaFomentadora, isExtensionista, isAgrodealer, isExportador } = useRole();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   // Role-based navigation items
   const getNavigationItems = () => {
+    // Exportador has specific navigation
+    if (isExportador) {
+      return [
+        { title: "Dashboard", icon: Home, url: "/exportador" },
+        { title: "Documentos", icon: Upload, url: "/exportador" },
+        { title: "Pedidos", icon: FileText, url: "/exportador" },
+        { title: "Certificados", icon: Award, url: "/exportador" },
+      ];
+    }
+
     // Agrodealer has specific navigation
     if (isAgrodealer) {
       return [
