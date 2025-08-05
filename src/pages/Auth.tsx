@@ -23,11 +23,7 @@ const Auth = () => {
   const [exporterData, setExporterData] = useState({
     email: "",
     password: "",
-    company_name: "",
-    company_nuit: "",
-    contact_phone: "",
-    export_products: "",
-    company_address: ""
+    company_name: ""
   });
   
   const navigate = useNavigate();
@@ -146,11 +142,11 @@ const Auth = () => {
           .insert({
             user_id: authData.user.id,
             company_name: exporterData.company_name,
-            company_nuit: exporterData.company_nuit,
+            company_nuit: '', // Will be filled in profile
             contact_email: exporterData.email,
-            contact_phone: exporterData.contact_phone,
-            export_products: exporterData.export_products.split(',').map(p => p.trim()),
-            company_address: exporterData.company_address
+            contact_phone: '', // Will be filled in profile
+            export_products: [], // Will be filled in profile
+            company_address: '' // Will be filled in profile
           });
 
         if (exporterError) throw exporterError;
@@ -165,11 +161,7 @@ const Auth = () => {
       setExporterData({
         email: "",
         password: "",
-        company_name: "",
-        company_nuit: "",
-        contact_phone: "",
-        export_products: "",
-        company_address: ""
+        company_name: ""
       });
 
     } catch (error: any) {
@@ -344,22 +336,6 @@ const Auth = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="company-nuit">NUIT da Empresa</Label>
-                  <div className="relative">
-                    <UserPlus className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="company-nuit"
-                      type="text"
-                      placeholder="123456789"
-                      className="pl-10"
-                      value={exporterData.company_nuit}
-                      onChange={(e) => setExporterData({ ...exporterData, company_nuit: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="exporter-email">Email</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -391,41 +367,13 @@ const Auth = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="contact-phone">Telefone</Label>
-                  <Input
-                    id="contact-phone"
-                    type="tel"
-                    placeholder="+258 84 123 4567"
-                    value={exporterData.contact_phone}
-                    onChange={(e) => setExporterData({ ...exporterData, contact_phone: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="export-products">Produtos para Exportação</Label>
-                  <TextareaComponent
-                    id="export-products"
-                    placeholder="Algodão, Gergelim, Amendoim (separados por vírgula)"
-                    value={exporterData.export_products}
-                    onChange={(e) => setExporterData({ ...exporterData, export_products: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="company-address">Endereço da Empresa</Label>
-                  <TextareaComponent
-                    id="company-address"
-                    placeholder="Endereço completo da empresa"
-                    value={exporterData.company_address}
-                    onChange={(e) => setExporterData({ ...exporterData, company_address: e.target.value })}
-                  />
-                </div>
-
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? "A registar..." : "Registar como Exportador"}
                 </Button>
+
+                <p className="text-sm text-muted-foreground text-center">
+                  Complete o seu perfil após o registo para submeter pedidos de certificação.
+                </p>
               </form>
             </TabsContent>
           </Tabs>
