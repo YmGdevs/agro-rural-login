@@ -48,6 +48,17 @@ serve(async (req) => {
       )
     }
 
+    // Generate QR code data URL
+    const qrData = encodeURIComponent(certificate.qr_code_data || JSON.stringify({
+      certificateNumber: certificate.certificate_number,
+      company: certificate.export_applications.exporters.company_name,
+      nuit: certificate.export_applications.exporters.company_nuit,
+      verificationUrl: `https://vxkljzytssofphkedakk.supabase.co/verify-certificate/${certificate.certificate_number}`
+    }))
+    
+    // Generate QR code using QR Server API (free service)
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${qrData}&bgcolor=ffffff&color=000000&format=png&ecc=M`
+
     // Create HTML content for the certificate
     const htmlContent = `
 <!DOCTYPE html>
@@ -195,10 +206,9 @@ serve(async (req) => {
         <div class="certificate-number">${certificate.certificate_number}</div>
         
         <div class="qr-section">
-            <div style="font-weight: bold; margin-bottom: 10px;">QR Code</div>
-            <div style="border: 1px solid #ddd; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; font-size: 10px;">
-                ${certificate.certificate_number}
-            </div>
+            <div style="font-weight: bold; margin-bottom: 5px; font-size: 10px;">Verificação</div>
+            <img src="${qrCodeUrl}" alt="QR Code" style="width: 100px; height: 100px; border: none;" />
+            <div style="font-size: 8px; margin-top: 5px; word-break: break-all;">${certificate.certificate_number}</div>
         </div>
 
         <div class="content-wrapper">
