@@ -13,329 +13,180 @@ serve(async (req) => {
   }
 
   try {
-    console.log('PDF generation started')
-    const { certificateId } = await req.json()
-    console.log('Certificate ID received:', certificateId)
+    console.log('Function started')
+    
+    const requestBody = await req.json()
+    console.log('Request body received:', requestBody)
+    
+    const { certificateId } = requestBody
+    console.log('Certificate ID:', certificateId)
     
     if (!certificateId) {
+      console.log('No certificate ID provided')
       return new Response(
         JSON.stringify({ error: 'Certificate ID is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
+    console.log('Creating Supabase client')
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    console.log('Fetching certificate data for ID:', certificateId)
-    // Fetch certificate and application data
+    console.log('Fetching certificate...')
+    // Fetch certificate first
     const { data: certificate, error: certError } = await supabaseClient
       .from('export_certificates')
-      .select(`
-        *,
-        export_applications!inner(
-          *,
-          exporters!inner(*)
-        )
-      `)
+      .select('*')
       .eq('id', certificateId)
       .single()
     
-    console.log('Certificate data:', certificate)
-    console.log('Certificate error:', certError)
+    console.log('Certificate result:', { certificate, certError })
 
     if (certError || !certificate) {
-      console.error('Error fetching certificate:', certError)
+      console.error('Certificate not found:', certError)
       return new Response(
-        JSON.stringify({ error: 'Certificate not found' }),
+        JSON.stringify({ error: 'Certificate not found', details: certError?.message }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Generate QR code data URL using external service
-    const qrData = encodeURIComponent(certificate.qr_code_data || JSON.stringify({
+    console.log('Fetching application...')
+    // Fetch application separately
+    const { data: application, error: appError } = await supabaseClient
+      .from('export_applications')
+      .select('*')
+      .eq('id', certificate.application_id)
+      .single()
+    
+    console.log('Application result:', { application, appError })
+
+    if (appError || !application) {
+      console.error('Application not found:', appError)
+      return new Response(
+        JSON.stringify({ error: 'Application not found', details: appError?.message }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log('Fetching exporter...')
+    // Fetch exporter separately
+    const { data: exporter, error: exporterError } = await supabaseClient
+      .from('exporters')
+      .select('*')
+      .eq('id', application.exporter_id)
+      .single()
+    
+    console.log('Exporter result:', { exporter, exporterError })
+
+    if (exporterError || !exporter) {
+      console.error('Exporter not found:', exporterError)
+      return new Response(
+        JSON.stringify({ error: 'Exporter not found', details: exporterError?.message }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log('Creating certificate HTML...')
+    
+    // Generate QR code URL
+    const qrData = encodeURIComponent(JSON.stringify({
       certificateNumber: certificate.certificate_number,
-      company: certificate.export_applications.exporters.company_name,
-      nuit: certificate.export_applications.exporters.company_nuit,
+      company: exporter.company_name,
+      nuit: exporter.company_nuit,
       verificationUrl: `https://vxkljzytssofphkedakk.supabase.co/verify-certificate/${certificate.certificate_number}`
     }))
     
-    console.log('Generating QR code')
-    // Generate QR code using QR Server API (free service)
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${qrData}&bgcolor=ffffff&color=000000&format=png&ecc=M`
 
-    console.log('Creating HTML certificate')
-    // Create HTML content for the certificate
-    const htmlContent = `
-<!DOCTYPE html>
+    // Create simple HTML content
+    const htmlContent = `<!DOCTYPE html>
 <html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Certificado de Exportação - ${certificate.certificate_number}</title>
+    <title>Certificado ${certificate.certificate_number}</title>
     <style>
-        @page {
-            size: A4;
-            margin: 2cm;
-        }
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 20px;
-            background: white;
-        }
-        .certificate {
-            max-width: 800px;
-            margin: 0 auto;
-            border: 3px solid #2e7d32;
-            padding: 40px;
-            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-            border-bottom: 2px solid #2e7d32;
-            padding-bottom: 20px;
-        }
-        .logo {
-            font-size: 28px;
-            font-weight: bold;
-            color: #2e7d32;
-            margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-        .subtitle {
-            font-size: 16px;
-            color: #666;
-            margin-bottom: 20px;
-        }
-        .title {
-            font-size: 22px;
-            font-weight: bold;
-            color: #2e7d32;
-            background: #e8f5e8;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 5px solid #2e7d32;
-        }
-        .content {
-            margin: 30px 0;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-        .section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
-        }
-        .field {
-            margin: 12px 0;
-            display: flex;
-            flex-wrap: wrap;
-        }
-        .field-label {
-            font-weight: bold;
-            color: #2e7d32;
-            min-width: 140px;
-            margin-right: 10px;
-        }
-        .field-value {
-            color: #333;
-            flex: 1;
-        }
-        .qr-section {
-            position: absolute;
-            top: 100px;
-            right: 60px;
-            width: 120px;
-            height: 120px;
-            border: 2px dashed #2e7d32;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: white;
-            border-radius: 8px;
-            font-size: 12px;
-            color: #666;
-            text-align: center;
-        }
-        .signature {
-            margin-top: 60px;
-            text-align: center;
-            border-top: 2px solid #2e7d32;
-            padding-top: 30px;
-        }
-        .signature-line {
-            border-top: 2px solid #333;
-            width: 250px;
-            margin: 30px auto 15px;
-        }
-        .signature-text {
-            font-weight: bold;
-            color: #2e7d32;
-            margin: 5px 0;
-        }
-        .certificate-number {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: #2e7d32;
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 12px;
-        }
-        .watermark {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-45deg);
-            font-size: 120px;
-            color: rgba(46, 125, 50, 0.05);
-            font-weight: bold;
-            z-index: 0;
-            pointer-events: none;
-        }
-        .content-wrapper {
-            position: relative;
-            z-index: 1;
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .certificate { border: 2px solid #2e7d32; padding: 30px; max-width: 800px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .title { color: #2e7d32; font-size: 24px; font-weight: bold; }
+        .content { margin: 20px 0; }
+        .field { margin: 10px 0; }
+        .label { font-weight: bold; }
+        .qr-code { text-align: center; margin: 20px 0; }
     </style>
 </head>
 <body>
-    <div class="watermark">IAOM</div>
     <div class="certificate">
-        <div class="certificate-number">${certificate.certificate_number}</div>
-        
-        <div class="qr-section">
-            <div style="font-weight: bold; margin-bottom: 5px; font-size: 10px;">Verificação</div>
-            <img src="${qrCodeUrl}" alt="QR Code" style="width: 100px; height: 100px; border: none;" />
-            <div style="font-size: 8px; margin-top: 5px; word-break: break-all;">${certificate.certificate_number}</div>
+        <div class="header">
+            <div class="title">INSTITUTO DO ALGODÃO & OLEAGINOSAS</div>
+            <div>MOÇAMBIQUE</div>
+            <h2>CERTIFICADO DE EXPORTAÇÃO</h2>
         </div>
-
-        <div class="content-wrapper">
-            <div class="header">
-                <div class="logo">Instituto do Algodão & Oleaginosas</div>
-                <div class="subtitle">MOÇAMBIQUE</div>
-                <div class="title">CERTIFICADO DE EXPORTAÇÃO DE ALGODÃO</div>
-            </div>
-
-            <div class="content">
-                <div class="section">
-                    <h3 style="color: #2e7d32; margin-top: 0;">Dados da Empresa</h3>
-                    <div class="field">
-                        <span class="field-label">Nome:</span>
-                        <span class="field-value">${certificate.export_applications.exporters.company_name}</span>
-                    </div>
-                    <div class="field">
-                        <span class="field-label">NUIT:</span>
-                        <span class="field-value">${certificate.export_applications.exporters.company_nuit}</span>
-                    </div>
-                    <div class="field">
-                        <span class="field-label">Endereço:</span>
-                        <span class="field-value">${certificate.export_applications.exporters.company_address || 'Av. das Fibras, Maputo, Moçambique'}</span>
-                    </div>
-                    <div class="field">
-                        <span class="field-label">Email:</span>
-                        <span class="field-value">${certificate.export_applications.exporters.contact_email}</span>
-                    </div>
-                </div>
-
-                <div class="section">
-                    <h3 style="color: #2e7d32; margin-top: 0;">Dados do Produto</h3>
-                    <div class="field">
-                        <span class="field-label">Produto:</span>
-                        <span class="field-value">${certificate.export_applications.products?.join(', ') || 'Fibra de Algodão'}</span>
-                    </div>
-                    <div class="field">
-                        <span class="field-label">Quantidade:</span>
-                        <span class="field-value">${certificate.export_applications.quantity_kg ? `${certificate.export_applications.quantity_kg} kg` : '25 toneladas'}</span>
-                    </div>
-                    <div class="field">
-                        <span class="field-label">Classificação:</span>
-                        <span class="field-value">${certificate.export_applications.category || 'Tipo A - Longa Fibra'}</span>
-                    </div>
-                    <div class="field">
-                        <span class="field-label">Origem Geográfica:</span>
-                        <span class="field-value">${certificate.export_applications.commercialization_provinces?.join(', ') || 'Província de Nampula, Moçambique'}</span>
-                    </div>
-                    <div class="field">
-                        <span class="field-label">Destino:</span>
-                        <span class="field-value">${certificate.export_applications.destination_country}</span>
-                    </div>
-                </div>
-            </div>
-
-            <div style="text-align: center; margin: 30px 0; padding: 20px; background: #e8f5e8; border-radius: 8px;">
-                <div class="field">
-                    <span class="field-label">Número de Série:</span>
-                    <span class="field-value" style="font-size: 18px; font-weight: bold;">${certificate.certificate_number}</span>
-                </div>
-            </div>
-
-            <div class="signature">
-                <p style="margin-bottom: 20px; font-style: italic;">Assinado digitalmente por:</p>
-                <div class="signature-line"></div>
-                <div class="signature-text">Eng. João Mucavele</div>
-                <div style="color: #666; margin: 5px 0;">Cargo: Director Geral do IAOM</div>
-                <div style="color: #666; margin-top: 15px;">Data de emissão: ${new Date(certificate.issued_date).toLocaleDateString('pt-PT')}</div>
-                <div style="color: #666; margin: 5px 0;">Válido até: ${new Date(certificate.expiry_date).toLocaleDateString('pt-PT')}</div>
-            </div>
+        
+        <div class="content">
+            <div class="field"><span class="label">Número:</span> ${certificate.certificate_number}</div>
+            <div class="field"><span class="label">Empresa:</span> ${exporter.company_name}</div>
+            <div class="field"><span class="label">NUIT:</span> ${exporter.company_nuit}</div>
+            <div class="field"><span class="label">Produtos:</span> ${application.products?.join(', ') || 'N/A'}</div>
+            <div class="field"><span class="label">Destino:</span> ${application.destination_country}</div>
+            <div class="field"><span class="label">Quantidade:</span> ${application.quantity_kg ? `${application.quantity_kg} kg` : 'N/A'}</div>
+            <div class="field"><span class="label">Emitido em:</span> ${new Date(certificate.issued_date).toLocaleDateString('pt-PT')}</div>
+        </div>
+        
+        <div class="qr-code">
+            <img src="${qrCodeUrl}" alt="QR Code" style="width: 100px; height: 100px;" />
+            <div>Código de Verificação</div>
         </div>
     </div>
 </body>
 </html>`
 
-    console.log('Converting HTML to bytes')
-    // Convert HTML to bytes and upload as HTML file
+    console.log('Uploading certificate...')
+    
+    // Upload certificate
+    const fileName = `certificate-${certificate.certificate_number}-${Date.now()}.html`
     const htmlBytes = new TextEncoder().encode(htmlContent)
     
-    console.log('Uploading certificate file')
-    // Upload as HTML file with proper content type
-    const fileName = `certificate-${certificate.certificate_number}-${Date.now()}.html`
     const { data: uploadData, error: uploadError } = await supabaseClient.storage
       .from('export-documents')
       .upload(`certificates/${fileName}`, htmlBytes, {
         contentType: 'text/html; charset=utf-8',
-        cacheControl: '3600',
         upsert: false
       })
 
+    console.log('Upload result:', { uploadData, uploadError })
+
     if (uploadError) {
-      console.error('Error uploading certificate:', uploadError)
+      console.error('Upload failed:', uploadError)
       return new Response(
         JSON.stringify({ error: 'Failed to upload certificate', details: uploadError.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    console.log('Getting public URL')
     // Get public URL
     const { data: { publicUrl } } = supabaseClient.storage
       .from('export-documents')
       .getPublicUrl(`certificates/${fileName}`)
 
-    console.log('Updating certificate record')
-    // Update certificate with PDF URL
+    console.log('Public URL:', publicUrl)
+
+    // Update certificate
     const { error: updateError } = await supabaseClient
       .from('export_certificates')
       .update({ certificate_pdf_url: publicUrl })
       .eq('id', certificateId)
 
+    console.log('Update result:', updateError)
+
     if (updateError) {
-      console.error('Error updating certificate:', updateError)
+      console.error('Update failed:', updateError)
     }
 
-    console.log('Certificate generated successfully:', certificate.certificate_number)
+    console.log('Certificate generated successfully')
 
     return new Response(
       JSON.stringify({ 
@@ -347,7 +198,7 @@ serve(async (req) => {
     )
     
   } catch (error) {
-    console.error('Error in generate-certificate-pdf function:', error)
+    console.error('Function error:', error)
     return new Response(
       JSON.stringify({ error: 'Internal server error', details: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
