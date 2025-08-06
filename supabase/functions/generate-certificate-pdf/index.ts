@@ -62,9 +62,12 @@ serve(async (req) => {
     // Create HTML content for the certificate
     const htmlContent = `
 <!DOCTYPE html>
-<html>
+<html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Certificado de Exportação - ${certificate.certificate_number}</title>
     <style>
         @page {
             size: A4;
@@ -287,12 +290,13 @@ serve(async (req) => {
     // Convert HTML to bytes and upload as HTML file
     const htmlBytes = new TextEncoder().encode(htmlContent)
     
-    // Upload as HTML file  
+    // Upload as HTML file with proper content type
     const fileName = `certificate-${certificate.certificate_number}-${Date.now()}.html`
     const { data: uploadData, error: uploadError } = await supabaseClient.storage
       .from('export-documents')
       .upload(`certificates/${fileName}`, htmlBytes, {
-        contentType: 'text/html',
+        contentType: 'text/html; charset=utf-8',
+        cacheControl: '3600',
         upsert: false
       })
 
