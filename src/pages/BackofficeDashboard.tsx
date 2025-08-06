@@ -2,15 +2,43 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Users, UserCheck, MapPin, BarChart3 } from "lucide-react";
+import { Users, UserCheck, MapPin, BarChart3, FileText, Eye, CheckCircle, XCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 interface DashboardStats {
   totalExtensionistas: number;
   totalProducers: number;
   totalParcelas: number;
   recentActivity: number;
+}
+
+interface ExportApplication {
+  id: string;
+  application_type: string;
+  destination_country: string;
+  status: string;
+  submitted_at: string;
+  exporter_id: string;
+  representative_name?: string;
+  phone?: string;
+  nuit_holder?: string;
+  license_number?: string;
+  products: string[];
+  crops?: string[];
+  districts?: string[];
+  commercialization_provinces?: string[];
+  quantity_kg?: number;
+  estimated_value?: number;
+  category?: string;
+  exporters?: {
+    company_name: string;
+    contact_email: string;
+  };
 }
 
 export default function BackofficeDashboard() {
@@ -21,6 +49,62 @@ export default function BackofficeDashboard() {
     recentActivity: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [applications, setApplications] = useState<ExportApplication[]>([]);
+  const [loadingApplications, setLoadingApplications] = useState(true);
+  const { toast } = useToast();
+
+  const fetchApplications = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('export_applications')
+        .select(`
+          *,
+          exporters!inner(company_name, contact_email)
+        `)
+        .order('submitted_at', { ascending: false });
+
+      if (error) throw error;
+      setApplications(data || []);
+    } catch (error) {
+      console.error('Error fetching applications:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar pedidos de exportação",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingApplications(false);
+    }
+  };
+
+  const updateApplicationStatus = async (applicationId: string, status: 'approved' | 'rejected', comments?: string) => {
+    try {
+      const { error } = await supabase
+        .from('export_applications')
+        .update({
+          status,
+          reviewed_at: new Date().toISOString(),
+          review_comments: comments,
+        })
+        .eq('id', applicationId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: `Pedido ${status === 'approved' ? 'aprovado' : 'rejeitado'} com sucesso`,
+      });
+
+      fetchApplications();
+    } catch (error) {
+      console.error('Error updating application:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar status do pedido",
+        variant: "destructive",
+      });
+    }
+  };
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -64,6 +148,7 @@ export default function BackofficeDashboard() {
     };
 
     fetchStats();
+    fetchApplications();
   }, []);
 
   const StatCard = ({ title, value, icon: Icon, description }: {
@@ -132,6 +217,7 @@ export default function BackofficeDashboard() {
             <Tabs defaultValue="overview" className="space-y-4">
               <TabsList>
                 <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+                <TabsTrigger value="export-requests">Pedidos de Exportação</TabsTrigger>
                 <TabsTrigger value="extensionistas">Extensionistas</TabsTrigger>
                 <TabsTrigger value="producers">Produtores</TabsTrigger>
                 <TabsTrigger value="parcelas">Parcelas</TabsTrigger>
@@ -152,6 +238,80 @@ export default function BackofficeDashboard() {
                       <p>• {stats.totalParcelas} parcelas demarcadas</p>
                       <p>• {stats.recentActivity} novos registos esta semana</p>
                     </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="export-requests" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Pedidos de Certificado de Exportação</CardTitle>
+                    <CardDescription>
+                      Aprovação de pedidos de certificado de exportação
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {loadingApplications ? (
+                      <p className="text-sm text-muted-foreground">Carregando pedidos...</p>
+                    ) : applications.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Nenhum pedido encontrado.</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {applications.map((app) => (
+                          <Card key={app.id} className="border-l-4 border-l-primary/20">
+                            <CardContent className="pt-6">
+                              <div className="flex items-start justify-between">
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-2">
+                                    <FileText className="h-4 w-4" />
+                                    <span className="font-medium">
+                                      {app.exporters?.company_name || 'Empresa não especificada'}
+                                    </span>
+                                    <Badge variant={
+                                      app.status === 'approved' ? 'default' :
+                                      app.status === 'rejected' ? 'destructive' : 'secondary'
+                                    }>
+                                      {app.status === 'pending' ? 'Pendente' :
+                                       app.status === 'approved' ? 'Aprovado' : 'Rejeitado'}
+                                    </Badge>
+                                  </div>
+                                  <div className="text-sm text-muted-foreground space-y-1">
+                                    <p><strong>Tipo:</strong> {app.application_type}</p>
+                                    <p><strong>País de destino:</strong> {app.destination_country}</p>
+                                    <p><strong>Produtos:</strong> {app.products?.join(', ')}</p>
+                                    {app.quantity_kg && <p><strong>Quantidade:</strong> {app.quantity_kg} kg</p>}
+                                    {app.estimated_value && <p><strong>Valor estimado:</strong> ${app.estimated_value}</p>}
+                                    <p><strong>Submetido em:</strong> {format(new Date(app.submitted_at), 'dd/MM/yyyy HH:mm')}</p>
+                                    {app.representative_name && <p><strong>Representante:</strong> {app.representative_name}</p>}
+                                    {app.phone && <p><strong>Telefone:</strong> {app.phone}</p>}
+                                  </div>
+                                </div>
+                                {app.status === 'pending' && (
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => updateApplicationStatus(app.id, 'approved')}
+                                      className="bg-green-600 hover:bg-green-700"
+                                    >
+                                      <CheckCircle className="h-4 w-4 mr-1" />
+                                      Aprovar
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={() => updateApplicationStatus(app.id, 'rejected')}
+                                    >
+                                      <XCircle className="h-4 w-4 mr-1" />
+                                      Rejeitar
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
