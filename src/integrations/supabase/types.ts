@@ -18,16 +18,32 @@ export type Database = {
         Row: {
           application_type: string
           approval_comments: string | null
+          category: string | null
+          commercialization_provinces: string[] | null
           created_at: string
+          crops: string[] | null
           destination_country: string
+          districts: string[] | null
           estimated_value: number | null
           exporter_id: string
           id: string
+          id_document_number: string | null
+          id_document_url: string | null
+          id_issue_date: string | null
+          id_issue_location: string | null
+          license_document_url: string | null
+          license_number: string | null
+          nuit_holder: string | null
+          payment_proof_url: string | null
+          phone: string | null
           products: string[]
           quantity_kg: number | null
+          representative_name: string | null
           review_comments: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          signature_date: string | null
+          signature_name: string | null
           status: string
           submitted_at: string
           updated_at: string
@@ -35,16 +51,32 @@ export type Database = {
         Insert: {
           application_type?: string
           approval_comments?: string | null
+          category?: string | null
+          commercialization_provinces?: string[] | null
           created_at?: string
+          crops?: string[] | null
           destination_country: string
+          districts?: string[] | null
           estimated_value?: number | null
           exporter_id: string
           id?: string
+          id_document_number?: string | null
+          id_document_url?: string | null
+          id_issue_date?: string | null
+          id_issue_location?: string | null
+          license_document_url?: string | null
+          license_number?: string | null
+          nuit_holder?: string | null
+          payment_proof_url?: string | null
+          phone?: string | null
           products: string[]
           quantity_kg?: number | null
+          representative_name?: string | null
           review_comments?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          signature_date?: string | null
+          signature_name?: string | null
           status?: string
           submitted_at?: string
           updated_at?: string
@@ -52,16 +84,32 @@ export type Database = {
         Update: {
           application_type?: string
           approval_comments?: string | null
+          category?: string | null
+          commercialization_provinces?: string[] | null
           created_at?: string
+          crops?: string[] | null
           destination_country?: string
+          districts?: string[] | null
           estimated_value?: number | null
           exporter_id?: string
           id?: string
+          id_document_number?: string | null
+          id_document_url?: string | null
+          id_issue_date?: string | null
+          id_issue_location?: string | null
+          license_document_url?: string | null
+          license_number?: string | null
+          nuit_holder?: string | null
+          payment_proof_url?: string | null
+          phone?: string | null
           products?: string[]
           quantity_kg?: number | null
+          representative_name?: string | null
           review_comments?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          signature_date?: string | null
+          signature_name?: string | null
           status?: string
           submitted_at?: string
           updated_at?: string

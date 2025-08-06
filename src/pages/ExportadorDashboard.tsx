@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import CertificateRequestForm from "@/components/CertificateRequestForm";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -78,6 +79,7 @@ export default function ExportadorDashboard() {
   const [certificates, setCertificates] = useState<ExportCertificate[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNewApplication, setShowNewApplication] = useState(false);
+  const [showCertificateRequest, setShowCertificateRequest] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   const [newApplication, setNewApplication] = useState({
@@ -444,13 +446,35 @@ export default function ExportadorDashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   Pedidos de Certificação
-                  <Dialog open={showNewApplication} onOpenChange={setShowNewApplication}>
-                    <DialogTrigger asChild>
-                      <Button>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Novo Pedido
-                      </Button>
-                    </DialogTrigger>
+                   <div className="flex gap-2">
+                     <Dialog open={showCertificateRequest} onOpenChange={setShowCertificateRequest}>
+                       <DialogTrigger asChild>
+                         <Button>
+                           <Award className="h-4 w-4 mr-2" />
+                           Pedir Certificado
+                         </Button>
+                       </DialogTrigger>
+                       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                         <DialogHeader>
+                           <DialogTitle>Pedido de Certificado de Exportação</DialogTitle>
+                         </DialogHeader>
+                         <CertificateRequestForm
+                           exporterId={exporter.id}
+                           onSuccess={() => {
+                             setShowCertificateRequest(false);
+                             fetchExporterData();
+                           }}
+                           onCancel={() => setShowCertificateRequest(false)}
+                         />
+                       </DialogContent>
+                     </Dialog>
+                     <Dialog open={showNewApplication} onOpenChange={setShowNewApplication}>
+                       <DialogTrigger asChild>
+                         <Button variant="outline">
+                           <Plus className="h-4 w-4 mr-2" />
+                           Novo Pedido
+                         </Button>
+                       </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Novo Pedido de Certificação</DialogTitle>
@@ -498,26 +522,38 @@ export default function ExportadorDashboard() {
                         </Button>
                       </div>
                     </DialogContent>
-                  </Dialog>
-                </CardTitle>
+                   </Dialog>
+                   </div>
+                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {applications.map((app) => (
-                    <div key={app.id} className="p-4 border rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="font-medium">Destino: {app.destination_country}</p>
-                        {getStatusBadge(app.status)}
-                      </div>
-                      <div className="space-y-2 text-sm">
-                        <p><strong>Produtos:</strong> {app.products.join(', ')}</p>
-                        {app.quantity_kg && <p><strong>Quantidade:</strong> {app.quantity_kg} kg</p>}
-                        {app.estimated_value && <p><strong>Valor:</strong> {app.estimated_value.toLocaleString('pt-MZ')} MZN</p>}
-                        <p><strong>Submetido:</strong> {new Date(app.submitted_at).toLocaleDateString('pt-PT')}</p>
+                    <div key={app.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex-1">
+                        <p className="font-medium">
+                          {app.application_type === 'certification' ? 'Certificado de Exportação' : 'Renovação'} - 
+                          {app.products?.join(', ') || 'N/A'}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {app.destination_country && `Destino: ${app.destination_country} | `}
+                          Submetido em {new Date(app.submitted_at).toLocaleDateString('pt-PT')}
+                        </p>
+                        {(app as any).nuit_holder && (
+                          <p className="text-sm text-muted-foreground">
+                            Portador NUIT: {(app as any).nuit_holder}
+                          </p>
+                        )}
+                        {(app as any).category && (
+                          <p className="text-sm text-muted-foreground">
+                            Categoria: {(app as any).category}
+                          </p>
+                        )}
                         {app.review_comments && (
-                          <p className="text-yellow-600 mt-2">{app.review_comments}</p>
+                          <p className="text-sm text-yellow-600 mt-1">{app.review_comments}</p>
                         )}
                       </div>
+                      {getStatusBadge(app.status)}
                     </div>
                   ))}
                 </div>
