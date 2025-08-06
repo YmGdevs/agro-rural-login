@@ -240,6 +240,31 @@ export default function ExportadorDashboard() {
     }
   };
 
+  const generateCertificatePDF = async (certificateId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-certificate-pdf', {
+        body: { certificateId }
+      });
+
+      if (error) {
+        console.error('Error generating PDF:', error);
+        toast.error("Erro ao gerar PDF do certificado");
+        return;
+      }
+
+      if (data?.certificateUrl) {
+        toast.success("PDF do certificado gerado com sucesso!");
+        // Refresh data to show the new PDF URL
+        fetchExporterData();
+        // Open the certificate in a new tab
+        window.open(data.certificateUrl, '_blank');
+      }
+    } catch (error) {
+      console.error('Error calling PDF generation function:', error);
+      toast.error("Erro ao gerar PDF do certificado");
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       pending: { label: "Pendente", variant: "secondary" as const, icon: Clock },
@@ -590,14 +615,34 @@ export default function ExportadorDashboard() {
                         <p><strong>Tipo:</strong> {cert.certificate_type}</p>
                         <p><strong>Emitido:</strong> {new Date(cert.issued_date).toLocaleDateString('pt-PT')}</p>
                         <p><strong>Validade:</strong> {new Date(cert.expiry_date).toLocaleDateString('pt-PT')}</p>
-                        {cert.certificate_pdf_url && (
-                          <Button variant="outline" size="sm" asChild>
-                            <a href={cert.certificate_pdf_url} target="_blank" rel="noopener noreferrer">
-                              <FileText className="h-4 w-4 mr-2" />
-                              Baixar PDF
-                            </a>
-                          </Button>
+                        {cert.export_applications && (
+                          <>
+                            <p><strong>Destino:</strong> {cert.export_applications.destination_country}</p>
+                            <p><strong>Produtos:</strong> {cert.export_applications.products?.join(', ')}</p>
+                            {cert.export_applications.quantity_kg && (
+                              <p><strong>Quantidade:</strong> {cert.export_applications.quantity_kg} kg</p>
+                            )}
+                          </>
                         )}
+                        <div className="flex gap-2 mt-3">
+                          {cert.certificate_pdf_url ? (
+                            <Button variant="outline" size="sm" asChild>
+                              <a href={cert.certificate_pdf_url} target="_blank" rel="noopener noreferrer">
+                                <FileText className="h-4 w-4 mr-2" />
+                                Baixar PDF
+                              </a>
+                            </Button>
+                          ) : (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => generateCertificatePDF(cert.id)}
+                            >
+                              <FileText className="h-4 w-4 mr-2" />
+                              Gerar PDF
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
