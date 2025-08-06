@@ -69,6 +69,11 @@ interface ExportCertificate {
   expiry_date: string;
   status: 'active' | 'expired' | 'revoked';
   certificate_pdf_url?: string;
+  export_applications?: {
+    destination_country: string;
+    products: string[];
+    quantity_kg?: number;
+  };
 }
 
 export default function ExportadorDashboard() {
@@ -139,8 +144,15 @@ export default function ExportadorDashboard() {
         // Fetch certificates
         const { data: certsData } = await supabase
           .from('export_certificates')
-          .select('*')
-          .in('application_id', appsData?.map(app => app.id) || [])
+          .select(`
+            *,
+            export_applications!inner(
+              destination_country,
+              products,
+              quantity_kg
+            )
+          `)
+          .eq('export_applications.exporter_id', exporterData.id)
           .order('issued_date', { ascending: false });
 
         setCertificates(certsData as any || []);

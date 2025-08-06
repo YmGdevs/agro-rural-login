@@ -90,10 +90,40 @@ export default function BackofficeDashboard() {
 
       if (error) throw error;
 
-      toast({
-        title: "Sucesso",
-        description: `Pedido ${status === 'approved' ? 'aprovado' : 'rejeitado'} com sucesso`,
-      });
+      // If approved, generate certificate
+      if (status === 'approved') {
+        try {
+          const { data, error: certError } = await supabase.functions.invoke('generate-export-certificate', {
+            body: { applicationId }
+          });
+
+          if (certError) {
+            console.error('Error generating certificate:', certError);
+            toast({
+              title: "Aviso",
+              description: "Pedido aprovado, mas erro ao gerar certificado",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Sucesso",
+              description: `Pedido aprovado e certificado ${data.certificateNumber} gerado com sucesso!`,
+            });
+          }
+        } catch (certError) {
+          console.error('Error calling certificate function:', certError);
+          toast({
+            title: "Aviso",
+            description: "Pedido aprovado, mas erro ao gerar certificado",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Sucesso",
+          description: "Pedido rejeitado com sucesso",
+        });
+      }
 
       fetchApplications();
     } catch (error) {
