@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import CertificateRequestForm from "@/components/CertificateRequestForm";
+import { CertificatePreview } from "@/components/CertificatePreview";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -24,7 +25,8 @@ import {
   Plus,
   Award,
   Building2,
-  Package
+  Package,
+  Eye
 } from "lucide-react";
 
 interface Exporter {
@@ -64,10 +66,13 @@ interface ExportApplication {
 interface ExportCertificate {
   id: string;
   certificate_number: string;
-  certificate_type: string;
-  issued_date: string;
+  exporter_name: string;
+  product_name: string;
+  quantity: number;
+  destination_country: string;
+  issue_date: string;
   expiry_date: string;
-  status: 'active' | 'expired' | 'revoked';
+  status: string;
   certificate_pdf_url?: string;
   export_applications?: {
     destination_country: string;
@@ -86,6 +91,8 @@ export default function ExportadorDashboard() {
   const [showNewApplication, setShowNewApplication] = useState(false);
   const [showCertificateRequest, setShowCertificateRequest] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [selectedCertificate, setSelectedCertificate] = useState<ExportCertificate | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const [newApplication, setNewApplication] = useState({
     products: [] as string[],
@@ -240,29 +247,9 @@ export default function ExportadorDashboard() {
     }
   };
 
-  const generateCertificatePDF = async (certificateId: string) => {
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-certificate-pdf', {
-        body: { certificateId }
-      });
-
-      if (error) {
-        console.error('Error generating PDF:', error);
-        toast.error("Erro ao gerar PDF do certificado");
-        return;
-      }
-
-      if (data?.certificateUrl) {
-        toast.success("PDF do certificado gerado com sucesso!");
-        // Refresh data to show the new PDF URL
-        fetchExporterData();
-        // Open the certificate in a new tab
-        window.open(data.certificateUrl, '_blank');
-      }
-    } catch (error) {
-      console.error('Error calling PDF generation function:', error);
-      toast.error("Erro ao gerar PDF do certificado");
-    }
+  const handleViewCertificate = (certificate: ExportCertificate) => {
+    setSelectedCertificate(certificate);
+    setIsPreviewOpen(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -612,9 +599,9 @@ export default function ExportadorDashboard() {
                         {getStatusBadge(cert.status)}
                       </div>
                       <div className="space-y-2 text-sm">
-                        <p><strong>Tipo:</strong> {cert.certificate_type}</p>
-                        <p><strong>Emitido:</strong> {new Date(cert.issued_date).toLocaleDateString('pt-PT')}</p>
-                        <p><strong>Validade:</strong> {new Date(cert.expiry_date).toLocaleDateString('pt-PT')}</p>
+                         <p><strong>Tipo:</strong> Certificado de Exportação</p>
+                         <p><strong>Emitido:</strong> {new Date(cert.issue_date).toLocaleDateString('pt-PT')}</p>
+                         <p><strong>Validade:</strong> {new Date(cert.expiry_date).toLocaleDateString('pt-PT')}</p>
                         {cert.export_applications && (
                           <>
                             <p><strong>Destino:</strong> {cert.export_applications.destination_country}</p>
@@ -632,16 +619,22 @@ export default function ExportadorDashboard() {
                                 Baixar PDF
                               </a>
                             </Button>
-                          ) : (
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => generateCertificatePDF(cert.id)}
-                            >
-                              <FileText className="h-4 w-4 mr-2" />
-                              Gerar PDF
-                            </Button>
-                          )}
+                           ) : (
+                             <Button 
+                               variant="outline" 
+                               size="sm" 
+                               onClick={() => handleViewCertificate({
+                                 ...cert,
+                                 exporter_name: exporter.company_name,
+                                 product_name: cert.export_applications?.products?.join(', ') || 'N/A',
+                                 quantity: cert.export_applications?.quantity_kg || 0,
+                                 destination_country: cert.export_applications?.destination_country || 'N/A'
+                               })}
+                             >
+                               <Eye className="h-4 w-4 mr-2" />
+                               Ver Certificado
+                             </Button>
+                           )}
                         </div>
                       </div>
                     </div>
@@ -652,6 +645,18 @@ export default function ExportadorDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <CertificatePreview
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        certificate={selectedCertificate}
+        companyInfo={exporter ? {
+          name: exporter.company_name,
+          address: exporter.company_address || 'Endereço não informado',
+          phone: exporter.contact_phone || 'Telefone não informado',
+          email: exporter.contact_email || 'Email não informado'
+        } : undefined}
+      />
     </SidebarProvider>
   );
 }
