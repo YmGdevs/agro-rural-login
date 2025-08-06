@@ -15,7 +15,9 @@ serve(async (req) => {
   }
 
   try {
+    console.log('PDF generation started')
     const { certificateId } = await req.json()
+    console.log('Certificate ID received:', certificateId)
     
     if (!certificateId) {
       return new Response(
@@ -29,6 +31,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    console.log('Fetching certificate data for ID:', certificateId)
     // Fetch certificate and application data
     const { data: certificate, error: certError } = await supabaseClient
       .from('export_certificates')
@@ -41,6 +44,9 @@ serve(async (req) => {
       `)
       .eq('id', certificateId)
       .single()
+    
+    console.log('Certificate data:', certificate)
+    console.log('Certificate error:', certError)
 
     if (certError || !certificate) {
       console.error('Error fetching certificate:', certError)
