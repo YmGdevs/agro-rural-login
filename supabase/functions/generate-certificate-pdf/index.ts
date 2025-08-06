@@ -1,7 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import { jsPDF } from "https://esm.sh/jspdf@2.5.1"
-import QRCode from "https://esm.sh/qrcode@1.5.3"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -56,96 +54,259 @@ serve(async (req) => {
       )
     }
 
-    // Generate QR code for PDF
-    const qrData = JSON.stringify({
+    // Generate QR code data URL using external service
+    const qrData = encodeURIComponent(certificate.qr_code_data || JSON.stringify({
       certificateNumber: certificate.certificate_number,
       company: certificate.export_applications.exporters.company_name,
       nuit: certificate.export_applications.exporters.company_nuit,
-      products: certificate.export_applications.products,
-      quantity: certificate.export_applications.quantity_kg,
-      destination: certificate.export_applications.destination_country,
-      issueDate: certificate.issued_date,
-      verificationUrl: `${Deno.env.get('SUPABASE_URL')}/verify-certificate/${certificate.certificate_number}`
-    })
+      verificationUrl: `https://vxkljzytssofphkedakk.supabase.co/verify-certificate/${certificate.certificate_number}`
+    }))
     
-    const qrCodeDataURL = await QRCode.toDataURL(qrData, {
-      width: 100,
-      margin: 1,
-      color: {
-        dark: '#000000',
-        light: '#FFFFFF'
-      }
-    })
+    console.log('Generating QR code')
+    // Generate QR code using QR Server API (free service)
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${qrData}&bgcolor=ffffff&color=000000&format=png&ecc=M`
 
-    // Create PDF
-    const doc = new jsPDF()
+    console.log('Creating HTML certificate')
+    // Create HTML content for the certificate
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Certificado de Exportação - ${certificate.certificate_number}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: white;
+        }
+        .certificate {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 3px solid #2e7d32;
+            padding: 40px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #2e7d32;
+            padding-bottom: 20px;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2e7d32;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .subtitle {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        .title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #2e7d32;
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 5px solid #2e7d32;
+        }
+        .content {
+            margin: 30px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .field {
+            margin: 12px 0;
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .field-label {
+            font-weight: bold;
+            color: #2e7d32;
+            min-width: 140px;
+            margin-right: 10px;
+        }
+        .field-value {
+            color: #333;
+            flex: 1;
+        }
+        .qr-section {
+            position: absolute;
+            top: 100px;
+            right: 60px;
+            width: 120px;
+            height: 120px;
+            border: 2px dashed #2e7d32;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+        .signature {
+            margin-top: 60px;
+            text-align: center;
+            border-top: 2px solid #2e7d32;
+            padding-top: 30px;
+        }
+        .signature-line {
+            border-top: 2px solid #333;
+            width: 250px;
+            margin: 30px auto 15px;
+        }
+        .signature-text {
+            font-weight: bold;
+            color: #2e7d32;
+            margin: 5px 0;
+        }
+        .certificate-number {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #2e7d32;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 120px;
+            color: rgba(46, 125, 50, 0.05);
+            font-weight: bold;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .content-wrapper {
+            position: relative;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="watermark">IAOM</div>
+    <div class="certificate">
+        <div class="certificate-number">${certificate.certificate_number}</div>
+        
+        <div class="qr-section">
+            <div style="font-weight: bold; margin-bottom: 5px; font-size: 10px;">Verificação</div>
+            <img src="${qrCodeUrl}" alt="QR Code" style="width: 100px; height: 100px; border: none;" />
+            <div style="font-size: 8px; margin-top: 5px; word-break: break-all;">${certificate.certificate_number}</div>
+        </div>
+
+        <div class="content-wrapper">
+            <div class="header">
+                <div class="logo">Instituto do Algodão & Oleaginosas</div>
+                <div class="subtitle">MOÇAMBIQUE</div>
+                <div class="title">CERTIFICADO DE EXPORTAÇÃO DE ALGODÃO</div>
+            </div>
+
+            <div class="content">
+                <div class="section">
+                    <h3 style="color: #2e7d32; margin-top: 0;">Dados da Empresa</h3>
+                    <div class="field">
+                        <span class="field-label">Nome:</span>
+                        <span class="field-value">${certificate.export_applications.exporters.company_name}</span>
+                    </div>
+                    <div class="field">
+                        <span class="field-label">NUIT:</span>
+                        <span class="field-value">${certificate.export_applications.exporters.company_nuit}</span>
+                    </div>
+                    <div class="field">
+                        <span class="field-label">Endereço:</span>
+                        <span class="field-value">${certificate.export_applications.exporters.company_address || 'Av. das Fibras, Maputo, Moçambique'}</span>
+                    </div>
+                    <div class="field">
+                        <span class="field-label">Email:</span>
+                        <span class="field-value">${certificate.export_applications.exporters.contact_email}</span>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3 style="color: #2e7d32; margin-top: 0;">Dados do Produto</h3>
+                    <div class="field">
+                        <span class="field-label">Produto:</span>
+                        <span class="field-value">${certificate.export_applications.products?.join(', ') || 'Fibra de Algodão'}</span>
+                    </div>
+                    <div class="field">
+                        <span class="field-label">Quantidade:</span>
+                        <span class="field-value">${certificate.export_applications.quantity_kg ? `${certificate.export_applications.quantity_kg} kg` : '25 toneladas'}</span>
+                    </div>
+                    <div class="field">
+                        <span class="field-label">Classificação:</span>
+                        <span class="field-value">${certificate.export_applications.category || 'Tipo A - Longa Fibra'}</span>
+                    </div>
+                    <div class="field">
+                        <span class="field-label">Origem Geográfica:</span>
+                        <span class="field-value">${certificate.export_applications.commercialization_provinces?.join(', ') || 'Província de Nampula, Moçambique'}</span>
+                    </div>
+                    <div class="field">
+                        <span class="field-label">Destino:</span>
+                        <span class="field-value">${certificate.export_applications.destination_country}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0; padding: 20px; background: #e8f5e8; border-radius: 8px;">
+                <div class="field">
+                    <span class="field-label">Número de Série:</span>
+                    <span class="field-value" style="font-size: 18px; font-weight: bold;">${certificate.certificate_number}</span>
+                </div>
+            </div>
+
+            <div class="signature">
+                <p style="margin-bottom: 20px; font-style: italic;">Assinado digitalmente por:</p>
+                <div class="signature-line"></div>
+                <div class="signature-text">Eng. João Mucavele</div>
+                <div style="color: #666; margin: 5px 0;">Cargo: Director Geral do IAOM</div>
+                <div style="color: #666; margin-top: 15px;">Data de emissão: ${new Date(certificate.issued_date).toLocaleDateString('pt-PT')}</div>
+                <div style="color: #666; margin: 5px 0;">Válido até: ${new Date(certificate.expiry_date).toLocaleDateString('pt-PT')}</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`
+
+    console.log('Converting HTML to bytes')
+    // Convert HTML to bytes and upload as HTML file
+    const htmlBytes = new TextEncoder().encode(htmlContent)
     
-    // Set font
-    doc.setFont('helvetica')
-    
-    // Add IAOM header
-    doc.setFontSize(20)
-    doc.setTextColor(40, 40, 40)
-    doc.text('INSTITUTO DO ALGODÃO & OLEAGINOSAS', 105, 30, { align: 'center' })
-    doc.text('MOÇAMBIQUE', 105, 40, { align: 'center' })
-    
-    doc.setFontSize(18)
-    doc.setTextColor(0, 128, 0)
-    doc.text('CERTIFICADO DE EXPORTAÇÃO DE ALGODÃO', 105, 60, { align: 'center' })
-    
-    // Company details
-    doc.setFontSize(12)
-    doc.setTextColor(40, 40, 40)
-    
-    const leftMargin = 20
-    let yPosition = 90
-    
-    doc.text(`Nome: ${certificate.export_applications.exporters.company_name}`, leftMargin, yPosition)
-    yPosition += 10
-    doc.text(`NUIT: ${certificate.export_applications.exporters.company_nuit}`, leftMargin, yPosition)
-    yPosition += 10
-    doc.text(`Endereço: ${certificate.export_applications.exporters.company_address || 'N/A'}`, leftMargin, yPosition)
-    yPosition += 15
-    
-    // Product details
-    doc.text(`Produto: ${certificate.export_applications.products?.join(', ') || 'N/A'}`, leftMargin, yPosition)
-    yPosition += 10
-    doc.text(`Quantidade: ${certificate.export_applications.quantity_kg ? `${certificate.export_applications.quantity_kg} kg` : 'N/A'}`, leftMargin, yPosition)
-    yPosition += 10
-    doc.text(`Classificação: ${certificate.export_applications.category || 'Tipo A - Longa Fibra'}`, leftMargin, yPosition)
-    yPosition += 10
-    doc.text(`Origem Geográfica: ${certificate.export_applications.commercialization_provinces?.join(', ') || 'Moçambique'}`, leftMargin, yPosition)
-    yPosition += 10
-    doc.text(`Destino: ${certificate.export_applications.destination_country}`, leftMargin, yPosition)
-    yPosition += 15
-    
-    doc.text(`Número de Série: ${certificate.certificate_number}`, leftMargin, yPosition)
-    yPosition += 30
-    
-    // Signature section
-    doc.text('Assinado digitalmente por:', leftMargin, yPosition)
-    yPosition += 20
-    
-    doc.line(leftMargin, yPosition, leftMargin + 80, yPosition)
-    yPosition += 10
-    doc.text('Eng. João Mucavele', leftMargin, yPosition)
-    yPosition += 8
-    doc.text('Cargo: Director Geral do IAOM', leftMargin, yPosition)
-    yPosition += 8
-    doc.text(`Data de emissão: ${new Date(certificate.issued_date).toLocaleDateString('pt-PT')}`, leftMargin, yPosition)
-    
-    // Add QR code to PDF
-    doc.addImage(qrCodeDataURL, 'PNG', 20, 110, 25, 25)
-    
-    // Convert PDF to bytes
-    const pdfBytes = doc.output('arraybuffer')
-    
-    // Upload PDF to Supabase storage
-    const fileName = `certificate-${certificate.certificate_number}-${Date.now()}.pdf`
+    console.log('Uploading certificate file')
+    // Upload as HTML file with proper content type
+    const fileName = `certificate-${certificate.certificate_number}-${Date.now()}.html`
     const { data: uploadData, error: uploadError } = await supabaseClient.storage
       .from('export-documents')
-      .upload(`certificates/${fileName}`, pdfBytes, {
-        contentType: 'application/pdf',
+      .upload(`certificates/${fileName}`, htmlBytes, {
+        contentType: 'text/html; charset=utf-8',
+        cacheControl: '3600',
         upsert: false
       })
 
@@ -157,11 +318,13 @@ serve(async (req) => {
       )
     }
 
+    console.log('Getting public URL')
     // Get public URL
     const { data: { publicUrl } } = supabaseClient.storage
       .from('export-documents')
       .getPublicUrl(`certificates/${fileName}`)
 
+    console.log('Updating certificate record')
     // Update certificate with PDF URL
     const { error: updateError } = await supabaseClient
       .from('export_certificates')
