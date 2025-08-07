@@ -21,16 +21,13 @@ export function useCertificateGenerator() {
 
     setIsGenerating(true);
     try {
-      // Configurações para alta qualidade
+      // Configurações simplificadas que funcionam
       const canvas = await html2canvas(certificateRef.current, {
-        scale: 2, // Aumenta a resolução
+        scale: 2,
         useCORS: true,
-        allowTaint: true,
+        allowTaint: false,
         backgroundColor: '#ffffff',
-        width: 794, // A4 width in pixels at 96 DPI
-        height: 1123, // A4 height in pixels at 96 DPI
-        scrollX: 0,
-        scrollY: 0,
+        logging: false
       });
 
       const { format, fileName, quality = 1.0 } = options;
