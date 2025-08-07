@@ -2,6 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Print styles for certificates */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-certificate {
+    width: 100% !important;
+    height: 100% !important;
+    transform: none !important;
+    margin: 0 !important;
+    padding: 20px !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: white !important;
+    color: black !important;
+  }
+  
+  body {
+    background: white !important;
+  }
+  
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */

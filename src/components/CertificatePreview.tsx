@@ -2,9 +2,8 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Download, FileImage, FileText, X } from 'lucide-react';
+import { Printer, X } from 'lucide-react';
 import { CertificateTemplate } from './CertificateTemplate';
-import { useCertificateGenerator } from '@/hooks/useCertificateGenerator';
 
 interface ExportCertificate {
   id: string;
@@ -36,30 +35,18 @@ export function CertificatePreview({
   certificate, 
   companyInfo 
 }: CertificatePreviewProps) {
-  const { certificateRef, generateCertificate, isGenerating } = useCertificateGenerator();
+  const certificateRef = React.useRef<HTMLDivElement>(null);
 
   if (!certificate) return null;
 
-  const handleDownloadPNG = () => {
-    generateCertificate({
-      format: 'png',
-      fileName: `certificado_${certificate.certificate_number}`,
-      quality: 1.0
-    });
-  };
-
-  const handleDownloadPDF = () => {
-    generateCertificate({
-      format: 'pdf',
-      fileName: `certificado_${certificate.certificate_number}`,
-      quality: 0.95
-    });
+  const handlePrint = () => {
+    window.print();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-auto">
-        <DialogHeader className="flex flex-row items-center justify-between">
+        <DialogHeader className="flex flex-row items-center justify-between no-print">
           <div>
             <DialogTitle className="flex items-center gap-2">
               Certificado de Exportação
@@ -68,22 +55,12 @@ export function CertificatePreview({
           </div>
           <div className="flex items-center gap-2">
             <Button
-              onClick={handleDownloadPNG}
-              disabled={isGenerating}
+              onClick={handlePrint}
               variant="outline"
               size="sm"
             >
-              <FileImage className="h-4 w-4 mr-2" />
-              PNG
-            </Button>
-            <Button
-              onClick={handleDownloadPDF}
-              disabled={isGenerating}
-              variant="outline"
-              size="sm"
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              PDF
+              <Printer className="h-4 w-4 mr-2" />
+              Imprimir
             </Button>
             <Button onClick={onClose} variant="ghost" size="sm">
               <X className="h-4 w-4" />
@@ -92,8 +69,8 @@ export function CertificatePreview({
         </DialogHeader>
 
         <div className="mt-4">
-          <div className="border rounded-lg p-4 bg-muted/5">
-            <div className="transform scale-75 origin-top-left" style={{ width: '133.33%' }}>
+          <div className="border rounded-lg p-4 bg-white shadow-lg no-print">
+            <div className="transform scale-90 origin-top-left" style={{ width: '111.11%' }}>
               <CertificateTemplate
                 ref={certificateRef}
                 certificate={certificate}
@@ -101,16 +78,15 @@ export function CertificatePreview({
               />
             </div>
           </div>
-        </div>
-
-        {isGenerating && (
-          <div className="flex items-center justify-center py-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
-              Gerando certificado...
-            </div>
+          
+          {/* Version for printing - hidden on screen */}
+          <div className="hidden print:block">
+            <CertificateTemplate
+              certificate={certificate}
+              companyInfo={companyInfo}
+            />
           </div>
-        )}
+        </div>
       </DialogContent>
     </Dialog>
   );

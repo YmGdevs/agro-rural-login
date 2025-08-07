@@ -55,7 +55,7 @@ export const CertificateTemplate = React.forwardRef<HTMLDivElement, CertificateT
     return (
       <div
         ref={ref}
-        className="bg-background p-8 min-h-[29.7cm] w-[21cm] mx-auto"
+        className="bg-white p-8 min-h-[29.7cm] w-[21cm] mx-auto print-certificate shadow-lg"
         style={{
           fontFamily: 'Arial, sans-serif',
           fontSize: '14px',
