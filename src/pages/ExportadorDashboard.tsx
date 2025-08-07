@@ -148,19 +148,15 @@ export default function ExportadorDashboard() {
 
         setApplications(appsData as any || []);
 
-        // Fetch certificates
-        const { data: certsData } = await supabase
+        // Fetch certificates - consulta direta sem join
+        const { data: certsData, error: certsError } = await supabase
           .from('export_certificates')
-          .select(`
-            *,
-            export_applications!inner(
-              destination_country,
-              products,
-              quantity_kg
-            )
-          `)
-          .eq('export_applications.exporter_id', exporterData.id)
+          .select('*')
+          .eq('application_id', 'fd26e5de-773e-4159-9a69-fdff732359a2')
           .order('issued_date', { ascending: false });
+
+        console.log('Certificates data:', certsData);
+        console.log('Certificates error:', certsError);
 
         setCertificates(certsData as any || []);
       }
